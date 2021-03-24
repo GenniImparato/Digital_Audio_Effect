@@ -2,7 +2,7 @@
 
 namespace ADC_Driver
 {
-	void enable()
+	void init()
 	{
 		//enable clock
 		RCC->APB2ENR |= (1<<8);
@@ -14,6 +14,7 @@ namespace ADC_Driver
 	    //wait
 	    miosix::delayMs(500);
 	}
+
 
 	unsigned int singleConversion(int channel)
 	{
