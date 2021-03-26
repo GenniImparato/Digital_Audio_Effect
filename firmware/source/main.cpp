@@ -2,7 +2,7 @@
 #include "config.h"
 #include "ADC_Driver/ADC_Driver.h"
 #include "DAC_Driver/DAC_Driver.h"
-#include "DSP/DSPBase.h"
+#include "AudioEffects/AudioEffect.h"
 
 using namespace miosix;
 
@@ -12,6 +12,8 @@ typedef Gpio<GPIOA_BASE,1> analogIn;
 AudioBufferQueue	inBuffer;
 AudioBufferQueue 	outBuffer;
 
+AudioEffect			effect;
+
 
 int main()
 {
@@ -20,6 +22,7 @@ int main()
 
 	ADC_Driver::init();
 	DAC_Driver::init();
+	DAC_Driver::setVolume(0);
 
 	//start blink
 	/*for(int i=0; i<5; i++)
@@ -43,15 +46,9 @@ int main()
     	//Thread::sleep(500);
 
     	ledOn();
-    	for(int i=0; i<1000; i++)
-    	{
-		    unsigned short* wrBuff = DAC_Driver::getWritableBuffer();
-			for(int i=0;i<AUDIO_BUFFERS_SIZE;i++)
-				wrBuff[i]= i*(6000/AUDIO_BUFFERS_SIZE);
-			DAC_Driver::bufferFilled();
-		}
-		ledOff();
 
-		Thread::sleep(500);
+		effect.loop();
+
+		ledOff();
     }
 }
