@@ -23,24 +23,26 @@ int main()
 	ADC_Driver::init();
 	DAC_Driver::init();
 	DAC_Driver::setVolume(0);
-
+//
 	effect = new AudioEffect();
 
 	//start blink
-	/*for(int i=0; i<5; i++)
+	for(int i=0; i<35; i++)
 	{
 		ledOn();
-		Thread::sleep(250);
+		Thread::sleep(100);
 		ledOff();
-		Thread::sleep(250);
-	}*/
+		Thread::sleep(100);
+	}
+
+	delete effect;
 
 	//main loop
     while(true)
     {
 		ledOn();
-		Thread::sleep(250);
+		Thread::sleep(500);
 		ledOff();
-		Thread::sleep(250);
+		Thread::sleep(500);
     }
 }

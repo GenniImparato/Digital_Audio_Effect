@@ -5,16 +5,29 @@ using namespace miosix;
 
 AudioEffect::AudioEffect()
 {
-	thread = miosix::Thread::create(&AudioEffect::threadMain, 256, 1, this);
+	thread = Thread::create(&AudioEffect::threadMain, 256, 1, this);
 }
+
+AudioEffect::~AudioEffect()
+{
+	thread->terminate();
+
+	//wait for thread termination before deleting object
+	//fix crash on delete
+	while(Thread::exists(thread))
+		Thread::yield();
+}
+
 
 void AudioEffect::writeNextBuffer(unsigned short* wrBuff)
 {
-	//generate sawtooth wave
+	//generate sawtooth wave with tremolo
 	for(int i=0;i<AUDIO_BUFFERS_SIZE;i++)
 				wrBuff[i]= envelope*i*(6000/AUDIO_BUFFERS_SIZE);
-	DAC_Driver::bufferFilled();
+}
 
+void AudioEffect::postWrite()
+{
 	tim++;
 
 	tim = 0;
@@ -31,18 +44,23 @@ void AudioEffect::writeNextBuffer(unsigned short* wrBuff)
 		rising = false;
 	else if (envelope<=0.0)
 		rising = true;
-
 }
 
 void AudioEffect::loop()
 {
+	preWrite();						//virtual method
+
+	//Write next samples on DAC
 	unsigned short* wrBuff = DAC_Driver::getWritableBuffer(thread); 
-	writeNextBuffer(wrBuff);
+	writeNextBuffer(wrBuff);		//virtual method
+	DAC_Driver::bufferFilled();
+
+	postWrite();					//virtual method
 }
 
 void AudioEffect::threadMain(void *param)
 {
-	while(true)
+	while(!Thread::testTerminate())
 	{
 		reinterpret_cast<AudioEffect*>(param)->loop();
 	}

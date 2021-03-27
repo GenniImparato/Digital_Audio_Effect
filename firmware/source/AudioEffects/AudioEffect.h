@@ -6,28 +6,35 @@
 
 
 //base class for audio effect
-//run on a thread
-//base implementation reads audio samples from ADC and writes output samples on DAC 
+//runs on a its own thread
 class AudioEffect
 {
 	public:
+		//starts a new thread
 		AudioEffect();
+		//terminates thread
+		virtual ~AudioEffect();
 
-		//must be override
-		//should generate out samples
+	//override to implement different effects
+	protected:
+		virtual void		preWrite(){};
 		virtual void		writeNextBuffer(unsigned short* wrBuff);
-
-		void				loop();
+		virtual void		postWrite();
 
 	private:
 		miosix::Thread*		thread;
-		static void			threadMain(void *param);
 
-	int tim = 0;
-	int tim2 = 0;
-	bool rising = true;
-	bool rising2 = true;
-	float  envelope = 0;
+		//effect main loop
+		virtual void		loop();
+		//thread entry point
+		static  void		threadMain(void *param);
+
+		//default effect vars
+		int 				tim = 0;
+		int 				tim2 = 0;
+		bool 				rising = true;
+		bool 				rising2 = true;
+		float  				envelope = 0;
 };
 
 
