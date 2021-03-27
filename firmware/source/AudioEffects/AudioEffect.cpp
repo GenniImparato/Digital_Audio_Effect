@@ -1,6 +1,13 @@
 #include "AudioEffect.h"
 #include "../DAC_Driver/DAC_Driver.h"
 
+using namespace miosix;
+
+AudioEffect::AudioEffect()
+{
+	thread = miosix::Thread::create(&AudioEffect::threadMain, 256, 1, this);
+}
+
 void AudioEffect::writeNextBuffer(unsigned short* wrBuff)
 {
 	//generate sawtooth wave
@@ -29,6 +36,14 @@ void AudioEffect::writeNextBuffer(unsigned short* wrBuff)
 
 void AudioEffect::loop()
 {
-	unsigned short* wrBuff = DAC_Driver::getWritableBuffer(); 	//waits for buffer, suspends thread if not available
+	unsigned short* wrBuff = DAC_Driver::getWritableBuffer(thread); 
 	writeNextBuffer(wrBuff);
+}
+
+void AudioEffect::threadMain(void *param)
+{
+	while(true)
+	{
+		reinterpret_cast<AudioEffect*>(param)->loop();
+	}
 }

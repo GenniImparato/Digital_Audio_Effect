@@ -12,7 +12,7 @@ typedef Gpio<GPIOA_BASE,1> analogIn;
 AudioBufferQueue	inBuffer;
 AudioBufferQueue 	outBuffer;
 
-AudioEffect			effect;
+AudioEffect			*effect;
 
 
 int main()
@@ -23,6 +23,8 @@ int main()
 	ADC_Driver::init();
 	DAC_Driver::init();
 	DAC_Driver::setVolume(0);
+
+	effect = new AudioEffect();
 
 	//start blink
 	/*for(int i=0; i<5; i++)
@@ -36,19 +38,9 @@ int main()
 	//main loop
     while(true)
     {
-    	/*unsigned int potValue = ADC_Driver::singleConversion(1);
-
-    	if(potValue > 2000)
-    		ledOn();
-    	else
-    		ledOff();*/
-
-    	//Thread::sleep(500);
-
-    	ledOn();
-
-		effect.loop();
-
+		ledOn();
+		Thread::sleep(250);
 		ledOff();
+		Thread::sleep(250);
     }
 }

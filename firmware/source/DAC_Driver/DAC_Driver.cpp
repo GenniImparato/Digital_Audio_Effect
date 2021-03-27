@@ -13,19 +13,20 @@ typedef SoftwareI2C<sda,scl> i2c;
 
 AudioBufferQueue*	DAC_Driver::dmaBuffer;
 unsigned short*		DAC_Driver::dmaZeroBuffer;
-Thread*				DAC_Driver::waiting;
+Thread*				DAC_Driver::waitingThread;
 
 /**
  * Waits until a buffer is available for writing
  * \return a writable buffer from dmaBuffer
  */
-unsigned short * DAC_Driver::getWritableBuffer()
+unsigned short * DAC_Driver::getWritableBuffer(miosix::Thread* writerThread)
 {
 	FastInterruptDisableLock dLock;
+	waitingThread = writerThread;
 	unsigned short *result;
 	while(dmaBuffer->tryGetWritableBuffer(result)==false)
 	{
-		waiting->IRQwait();
+		waitingThread->IRQwait();
 		{
 			FastInterruptEnableLock eLock(dLock);
 			Thread::yield();
@@ -135,25 +136,14 @@ void DAC_Driver::init()
 
     
     //set zero buffer
-    unsigned short* wrBuff = getWritableBuffer();
+    unsigned short* wrBuff = getWritableBuffer(Thread::IRQgetCurrentThread());
 	for(int i=0;i<AUDIO_BUFFERS_SIZE;i++)
 		wrBuff[i]=0;
 	bufferFilled();
     
 	//Start playing
-	waiting=Thread::getCurrentThread();
 	dmaRefill();
 	send(0x02,0x9e);
-	/*for(;;)
-	{
-		wrBuff = getWritableBuffer();
-
-		for(int i=0;i<AUDIO_BUFFERS_SIZE;i++)
-		{
-			wrBuff[i]= i*(6000/AUDIO_BUFFERS_SIZE);
-		}
-		bufferFilled();
-	}*/
 }
 
 void DAC_Driver::send(unsigned char index, unsigned char data)
@@ -183,8 +173,8 @@ void DAC_Driver::IRQdmaEndHandler()
                 DMA_HIFCR_CFEIF5;
 	dmaBuffer->bufferEmptied();
 	IRQdmaRefill();
-	waiting->IRQwakeup();
-	if(waiting->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
+	waitingThread->IRQwakeup();
+	if(waitingThread->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
 		Scheduler::IRQfindNextThread();
 }
 

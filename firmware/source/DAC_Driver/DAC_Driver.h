@@ -15,7 +15,7 @@ class DAC_Driver
 
 		static AudioBufferQueue*	dmaBuffer;
 		static unsigned short*		dmaZeroBuffer;
-		static miosix::Thread*		waiting;
+		static miosix::Thread*		waitingThread;
 
 		//Helper function used to start a DMA transfer from non-interrupt code
 		static void 			dmaRefill();
@@ -31,7 +31,7 @@ class DAC_Driver
 		//refill DMA
 		static void 			IRQdmaRefill();
 		//waits until a buffer is available for writing
-		static unsigned short*  getWritableBuffer();
+		static unsigned short*  getWritableBuffer(miosix::Thread* t);
 		//must be called when writing is finished
 		static void				bufferFilled();
 
