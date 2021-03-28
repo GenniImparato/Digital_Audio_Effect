@@ -9,44 +9,32 @@
 
 class Oscillator
 {
+	public:
+		Oscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.5);
+		virtual ~Oscillator();
+
+		unsigned short	nextSample();
+		void			setFrequency(float freq);
+		void			setAmplitude(float ampl);
+
 	private:
 		float				currIndex;
 		float 				duration;
+
+		float 				amplitude;
+    	float 				frequency;
 
 	protected:
 		int					wavetableSize;
 		unsigned short*  	wavetable;
 
-		virtual void 		makeWavetable();
-
-	public:
-		Oscillator(int wavetableSize);
-		virtual ~Oscillator();
-
-		unsigned short	nextSample();
-		void			setFrequency(float freq);
-
-		float amplitude = 2000;
-    	float frequency = 172;
-    	float phase 	= 0;
-    	float time 		= 0;
-   		float deltaTime = 1.0/AUDIO_SAMPLING_FREQUENCY;	
 
 };
 
-class TriangleOscillator : public Oscillator
+class SawOscillator : public Oscillator
 {
 	public:
-		TriangleOscillator() : Oscillator(256) {};
-};
-
-class SineOscillator : public Oscillator
-{
-	private:
-		void makeSamples();
-
-	public:
-		SineOscillator() : Oscillator(256) {};
+		SawOscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.5);
 };
 
 
@@ -61,12 +49,13 @@ class Synthesizer	:public AudioEffect
 		void				postWrite();
 
 	private:
-		void				makeSineSample(int sampleIndex);
-
 		Oscillator*			osc1;
+		Oscillator*			osc2;
 
 		float				freq = 100;
 		bool 				rising = true;
+		float				ampl = 0;
+		bool 				rising2 = true;
 
 };
 

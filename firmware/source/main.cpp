@@ -18,13 +18,13 @@ AudioEffect			*effect;
 
 int main()
 {
-	//DSP::Handler::instance().initPeripherals();
 	analogIn::mode(Mode::INPUT_ANALOG);
 
 	ADC_Driver::init();
 	DAC_Driver::init();
 	DAC_Driver::setVolume(0);
-//
+
+	//starts new thread
 	effect = new Synthesizer();
 
 	//start blink
