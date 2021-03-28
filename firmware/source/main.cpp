@@ -3,6 +3,7 @@
 #include "ADC_Driver/ADC_Driver.h"
 #include "DAC_Driver/DAC_Driver.h"
 #include "AudioEffects/AudioEffect.h"
+#include "AudioEffects/Synthesizer.h"
 
 using namespace miosix;
 
@@ -24,7 +25,7 @@ int main()
 	DAC_Driver::init();
 	DAC_Driver::setVolume(0);
 //
-	effect = new AudioEffect();
+	effect = new Synthesizer();
 
 	//start blink
 	for(int i=0; i<35; i++)
@@ -34,8 +35,6 @@ int main()
 		ledOff();
 		Thread::sleep(100);
 	}
-
-	delete effect;
 
 	//main loop
     while(true)

@@ -14,6 +14,8 @@ typedef SoftwareI2C<sda,scl> i2c;
 AudioBufferQueue*	DAC_Driver::dmaBuffer;
 unsigned short*		DAC_Driver::dmaZeroBuffer;
 Thread*				DAC_Driver::waitingThread;
+bool				DAC_Driver::dmaRefillWaiting = false;
+Thread*				DAC_Driver::thread;
 
 /**
  * Waits until a buffer is available for writing
@@ -39,10 +41,15 @@ void DAC_Driver::bufferFilled()
 {
 	FastInterruptDisableLock dLock;
 	dmaBuffer->bufferFilled(dmaBuffer->bufferMaxSize());
+	/*if(dmaRefillWaiting)
+	{
+		dmaRefillWaiting=false;
+		dmaRefill();
+	}*/
 }
 
 //Configure the DMA to do another transfer
-void DAC_Driver::IRQdmaRefill()
+bool DAC_Driver::IRQdmaRefill()
 {
     const unsigned short *buffer;
 	unsigned int size;
@@ -50,9 +57,16 @@ void DAC_Driver::IRQdmaRefill()
     DMA1_Stream5->CR=0;
 	DMA1_Stream5->PAR=reinterpret_cast<unsigned int>(&SPI3->DR);
 
-	//if no buffer available, uses zero buff for dma
+	//if no buffer available
 	if(!dmaBuffer->tryGetReadableBuffer(buffer,size))
-		DMA1_Stream5->M0AR=reinterpret_cast<unsigned int>(dmaZeroBuffer);
+	{
+		dmaRefillWaiting = true;
+		//thread->IRQwakeup();
+		//Scheduler::IRQfindNextThread();
+		return false;
+		//DMA1_Stream5->M0AR=reinterpret_cast<unsigned int>(dmaZeroBuffer);
+		//size = 256;
+	}
 	else	
 		DMA1_Stream5->M0AR=reinterpret_cast<unsigned int>(buffer);
 
@@ -64,14 +78,16 @@ void DAC_Driver::IRQdmaRefill()
 			         DMA_SxCR_DIR_0   | //Memory to peripheral direction
 			         DMA_SxCR_TCIE    | //Interrupt on completion
 			  	     DMA_SxCR_EN;       //Start the DMA
+
+	return true;
 }
 
 
 //Helper function used to start a DMA transfer from non-interrupt code
-void DAC_Driver::dmaRefill()
+bool DAC_Driver::dmaRefill()
 {
 	FastInterruptDisableLock dLock;
-	IRQdmaRefill();
+	return IRQdmaRefill();
 }
 
 //initialize DAC, DMA and GPIO
@@ -123,7 +139,7 @@ void DAC_Driver::init()
     send(0x05,0x20); //AUTO=0, SPEED=01, 32K=0, VIDEO=0, RATIO=0, MCLK=0
     send(0x04,0xaf); //Headphone always ON, Speaker always OFF
     send(0x06,0x04); //I2S Mode
-    setVolume(-20);
+    setVolume(-50);
     
     SPI3->CR2=SPI_CR2_TXDMAEN;
     SPI3->I2SPR=  SPI_I2SPR_MCKOE | 6;
@@ -143,6 +159,9 @@ void DAC_Driver::init()
     
 	//Start playing
 	dmaRefill();
+
+	thread = Thread::create(&DAC_Driver::threadMain, 64);
+
 	send(0x02,0x9e);
 }
 
@@ -172,10 +191,28 @@ void DAC_Driver::IRQdmaEndHandler()
                 DMA_HIFCR_CDMEIF5 |
                 DMA_HIFCR_CFEIF5;
 	dmaBuffer->bufferEmptied();
-	IRQdmaRefill();
-	waitingThread->IRQwakeup();
-	if(waitingThread->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
-		Scheduler::IRQfindNextThread();
+	
+	if(IRQdmaRefill())
+	{
+		waitingThread->IRQwakeup();
+		if(waitingThread->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
+			Scheduler::IRQfindNextThread();
+	}
+
+}
+
+
+void DAC_Driver::threadMain(void *param)
+{
+	while(true)
+	{
+		if(dmaRefillWaiting)
+		{
+			dmaRefillWaiting = false;
+			dmaRefill();
+			thread->wait();
+		}
+	}
 }
 
 /**

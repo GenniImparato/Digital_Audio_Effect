@@ -5,6 +5,10 @@
 #include "../config.h"
 
 
+#define OUT_BUFFER_MAX 			65535
+#define OUT_BUFFER_MIN			0
+#define OUT_BUFFER_CENTER		((OUT_BUFFER_MAX-OUT_BUFFER_MIN)/2)
+
 //base class for audio effect
 //runs on a its own thread
 class AudioEffect
