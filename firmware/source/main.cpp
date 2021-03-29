@@ -22,7 +22,7 @@ int main()
 
 	ADC_Driver::init();
 	DAC_Driver::init();
-	DAC_Driver::setVolume(0);
+	DAC_Driver::setVolume(-30);
 
 	//starts new thread
 	effect = new Synthesizer();

@@ -10,12 +10,14 @@
 class Oscillator
 {
 	public:
-		Oscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.5);
+		Oscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.5, int center=OUT_BUFFER_CENTER);
 		virtual ~Oscillator();
 
-		unsigned short	nextSample();
+		int				nextSample();
 		void			setFrequency(float freq);
 		void			setAmplitude(float ampl);
+		void			setCenter(int center);
+		void			setPhase(int phase);
 
 	private:
 		float				currIndex;
@@ -23,10 +25,12 @@ class Oscillator
 
 		float 				amplitude;
     	float 				frequency;
+    	int 				center;
+    	int					phase;
 
 	protected:
 		int					wavetableSize;
-		unsigned short*  	wavetable;
+		int*  				wavetable;
 
 
 };
@@ -34,7 +38,19 @@ class Oscillator
 class SawOscillator : public Oscillator
 {
 	public:
-		SawOscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.5);
+		SawOscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.5, int center=OUT_BUFFER_CENTER);
+};
+
+class SquareOscillator : public Oscillator
+{
+	public:
+		SquareOscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.5, int center=OUT_BUFFER_CENTER);
+};
+
+class SineOscillator : public Oscillator
+{
+	public:
+		SineOscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.5, int center=OUT_BUFFER_CENTER);
 };
 
 
@@ -51,6 +67,7 @@ class Synthesizer	:public AudioEffect
 	private:
 		Oscillator*			osc1;
 		Oscillator*			osc2;
+		Oscillator*			osc3;
 
 		float				freq = 100;
 		bool 				rising = true;
