@@ -9,10 +9,6 @@ using namespace miosix;
 
 typedef Gpio<GPIOA_BASE,1> analogIn;
 
-
-AudioBufferQueue	inBuffer;
-AudioBufferQueue 	outBuffer;
-
 AudioEffect			*effect;
 
 
@@ -25,7 +21,8 @@ int main()
 	DAC_Driver::setVolume(-30);
 
 	//starts new thread
-	effect = new Synthesizer();
+	effect = new AudioEffect();
+	effect->startThread();
 
 	//start blink
 	for(int i=0; i<35; i++)
@@ -40,8 +37,8 @@ int main()
     while(true)
     {
 		ledOn();
-		Thread::sleep(500);
+		Thread::sleep(1000);
 		ledOff();
-		Thread::sleep(500);
+		Thread::sleep(1000);
     }
 }

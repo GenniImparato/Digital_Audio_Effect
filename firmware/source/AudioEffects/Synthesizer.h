@@ -58,6 +58,7 @@ class Synthesizer	:public AudioEffect
 {
 	public:
 		Synthesizer();
+		~Synthesizer();
 
 		//overriden methods
 		void				preWrite();

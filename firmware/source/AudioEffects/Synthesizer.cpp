@@ -112,6 +112,13 @@ Synthesizer::Synthesizer()	:AudioEffect()
 	osc3 = new SquareOscillator(512, 80, 0.02, 0);
 }
 
+Synthesizer::~Synthesizer()
+{
+	delete osc1;
+	delete osc2;
+	delete osc3;
+}
+
 void Synthesizer::preWrite()
 {
 }

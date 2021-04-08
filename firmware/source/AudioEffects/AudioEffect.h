@@ -19,18 +19,21 @@ class AudioEffect
 		//terminates thread
 		virtual ~AudioEffect();
 
+		void	startThread();
+
 	//override to implement different effects
 	protected:
 		virtual void		preWrite(){};
 		virtual void		writeNextBuffer(unsigned short* wrBuff);
 		virtual void		postWrite();
 
+
 	private:
 		miosix::Thread*		thread;
 
 		//effect main loop
 		virtual void		loop();
-		//thread entry point
+		//thread entry point, param is a pointer to AudioEffect
 		static  void		threadMain(void *param);
 
 		//default effect vars

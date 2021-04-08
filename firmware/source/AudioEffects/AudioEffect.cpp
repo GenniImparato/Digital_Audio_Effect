@@ -5,7 +5,6 @@ using namespace miosix;
 
 AudioEffect::AudioEffect()
 {
-	thread = Thread::create(&AudioEffect::threadMain, 256, 1, this);
 }
 
 AudioEffect::~AudioEffect()
@@ -16,6 +15,11 @@ AudioEffect::~AudioEffect()
 	//fix crash on delete
 	while(Thread::exists(thread))
 		Thread::yield();
+}
+
+void AudioEffect::startThread()
+{
+	thread = Thread::create(&AudioEffect::threadMain, 256, 1, this);
 }
 
 
@@ -62,6 +66,6 @@ void AudioEffect::threadMain(void *param)
 {
 	while(!Thread::testTerminate())
 	{
-		reinterpret_cast<AudioEffect*>(param)->loop();
+		((AudioEffect*)param)->loop();
 	}
 }
