@@ -1,7 +1,10 @@
 #include "AudioEffect.h"
 #include "../DAC_Driver/DAC_Driver.h"
+#include "../ADC_Driver/ADC_Driver.h"
 
 using namespace miosix;
+
+Mutex 	AudioEffect::ctrlMutex;
 
 AudioEffect::AudioEffect()
 {
@@ -9,17 +12,19 @@ AudioEffect::AudioEffect()
 
 AudioEffect::~AudioEffect()
 {
-	thread->terminate();
+	dspThread->terminate();
+	potThread->terminate();
 
 	//wait for thread termination before deleting object
 	//fix crash on delete
-	while(Thread::exists(thread))
+	while(Thread::exists(dspThread) && Thread::exists(potThread))
 		Thread::yield();
 }
 
-void AudioEffect::startThread()
+void AudioEffect::startThreads()
 {
-	thread = Thread::create(&AudioEffect::threadMain, 256, 1, this);
+	dspThread = Thread::create(&AudioEffect::dspThreadMain, 2048, 1, this);
+	potThread = Thread::create(&AudioEffect::potThreadMain, STACK_MIN, 0, this);
 }
 
 
@@ -50,22 +55,41 @@ void AudioEffect::postWrite()
 		rising = true;
 }
 
-void AudioEffect::loop()
+void AudioEffect::dspLoop()
 {
 	preWrite();						//virtual method
 
 	//Write next samples on DAC
-	unsigned short* wrBuff = DAC_Driver::getWritableBuffer(thread); 
+	unsigned short* wrBuff = DAC_Driver::getWritableBuffer(dspThread); 
 	writeNextBuffer(wrBuff);		//virtual method
 	DAC_Driver::bufferFilled();
 
 	postWrite();					//virtual method
 }
 
-void AudioEffect::threadMain(void *param)
+void AudioEffect::potLoop()
+{
+	{
+		Lock<Mutex> lock(ctrlMutex);
+		for(int i=0; i<CONTROLS_COUNT; i++)
+			ctrlValues[i] = ADC_Driver::singleConversionPot(i);
+	}
+
+	Thread::sleep(CONTROLS_REFRESH_PERIOD);
+}
+
+void AudioEffect::dspThreadMain(void *param)
 {
 	while(!Thread::testTerminate())
 	{
-		((AudioEffect*)param)->loop();
+		((AudioEffect*)param)->dspLoop();
+	}
+}
+
+void AudioEffect::potThreadMain(void *param)
+{
+	while(!Thread::testTerminate())
+	{
+		((AudioEffect*)param)->potLoop();
 	}
 }

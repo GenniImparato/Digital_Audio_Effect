@@ -46,7 +46,17 @@ void Oscillator::setPhase(int phase)
 
 int	Oscillator::nextSample()
 {
-	int ret = amplitude*wavetable[(int)(currIndex)] + center;
+	int ret = amplitude*wavetable[(int)(currIndex)] + 0.5;
+	currIndex += frequency*duration;
+	if(currIndex >= wavetableSize)
+		currIndex = 0;
+
+	return ret;
+}
+
+float Oscillator::nextSampleF()
+{
+	float ret = amplitude*wavetable[(int)(currIndex)]/(float)wavetableSize + center;
 	currIndex += frequency*duration;
 	if(currIndex >= wavetableSize)
 		currIndex = 0;
@@ -59,7 +69,7 @@ SawOscillator::SawOscillator(int wavetableSize, float frequency, float amplitude
 {
 	for(int i=0; i<wavetableSize; i++)
 	{
-		wavetable[i] = i*60000/wavetableSize - 30000;
+		wavetable[i] = center + i*60000/wavetableSize - 30000;
 	}
 }
 
@@ -68,11 +78,11 @@ SquareOscillator::SquareOscillator(int wavetableSize, float frequency, float amp
 {
 	for(int i=0; i<wavetableSize/2; i++)
 	{
-		wavetable[i] = 30000;
+		wavetable[i] = center + 30000;
 	}
 	for(int i=wavetableSize/2; i<wavetableSize; i++)
 	{
-		wavetable[i] = -30000;
+		wavetable[i] = center -30000;
 	}
 }
 
@@ -81,7 +91,7 @@ SineOscillator::SineOscillator(int wavetableSize, float frequency, float amplitu
 {
 	for(int i=0; i<wavetableSize; i++)
 	{
-		wavetable[i] = 30000*sin(2*PI*i/wavetableSize);
+		wavetable[i] = center + 30000*sin(2*PI*i/wavetableSize);
 	}
 }
 
@@ -107,9 +117,9 @@ Synthesizer::Synthesizer()	:AudioEffect()
 	{
 		buff[i] = osc1.getSample(2*(i-AUDIO_BUFFERS_SIZE*2));
 	}*/
-	osc1 = new SineOscillator(256, 100, 0.25, 0);
-	osc2 = new SineOscillator(512, 80, 0.25, 0);
-	osc3 = new SquareOscillator(512, 80, 0.02, 0);
+	osc1 = new SineOscillator(256, 500, 0.25, OUT_BUFFER_CENTER);
+	osc2 = new SquareOscillator(256, 80, 0.25, OUT_BUFFER_CENTER);
+	osc3 = new SawOscillator(256, 80, 0.25, OUT_BUFFER_CENTER);
 }
 
 Synthesizer::~Synthesizer()
@@ -126,25 +136,34 @@ void Synthesizer::preWrite()
 void Synthesizer::writeNextBuffer(unsigned short* wrBuff)
 {
 	for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
-		wrBuff[i] = OUT_BUFFER_CENTER + osc1->nextSample() + osc2->nextSample() + osc3->nextSample();
+		wrBuff[i] = (osc1->nextSample() + osc2->nextSample() + osc3->nextSample())/3;
 }
 
 
 void Synthesizer::postWrite()
 {
-	if(rising)
+	lfo1Incr = ctrlValues[3]/10000.0 + 0.001;
+	if(lfo1Rising)
 	{
-		freq += 0.5;
-		if(freq>=150)
-			rising = false;
+		lfo1 += lfo1Incr;
+		if(lfo1>=1.0)
+		{
+			lfo1 = 1.0;
+			lfo1Rising = false;
+		}
 	}
 	else
 	{
-		freq -= 0.5;
-		if(freq<=-0)
-			rising = true;
+		lfo1 -= lfo1Incr;
+		if(lfo1<=0)
+		{
+			lfo1 = 0;
+			lfo1Rising = true;
+		}
 	}
-	osc1->setFrequency(440 + freq);
-	osc2->setFrequency(20 + freq*1.29);
-	osc3->setFrequency(912 - freq*3.91);
+
+	osc1->setFrequency(ctrlValues[0]/3);
+	osc2->setFrequency(ctrlValues[1]/3);
+	osc2->setAmplitude(lfo1);
+	osc3->setFrequency(ctrlValues[2]/3);
 }

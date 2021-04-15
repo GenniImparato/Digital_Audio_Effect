@@ -16,13 +16,14 @@ int main()
 {
 	analogIn::mode(Mode::INPUT_ANALOG);
 
+	effect = new Synthesizer();
+
 	ADC_Driver::init();
 	DAC_Driver::init();
-	DAC_Driver::setVolume(-30);
+	DAC_Driver::setVolume(-10);
 
 	//starts new thread
-	effect = new AudioEffect();
-	effect->startThread();
+	effect->startThreads();
 
 	//start blink
 	for(int i=0; i<35; i++)

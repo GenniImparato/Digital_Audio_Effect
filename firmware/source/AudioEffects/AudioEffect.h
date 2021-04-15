@@ -5,37 +5,56 @@
 #include "../config.h"
 
 
-#define OUT_BUFFER_MAX 			65535
-#define OUT_BUFFER_MIN			0
-#define OUT_BUFFER_CENTER		((OUT_BUFFER_MAX-OUT_BUFFER_MIN)/2)
+#define OUT_BUFFER_MAX 				65535
+#define OUT_BUFFER_MIN				0
+#define OUT_BUFFER_CENTER			((OUT_BUFFER_MAX-OUT_BUFFER_MIN)/2)
+
+
+#define CONTROLS_COUNT				4
+#define CONTROLS_REFRESH_PERIOD		10 // ms
 
 //base class for audio effect
 //runs on a its own thread
 class AudioEffect
 {
 	public:
-		//starts a new thread
+		//doesn't start threads, need to call startThreads() after creation
 		AudioEffect();
-		//terminates thread
+		//terminates threads
 		virtual ~AudioEffect();
 
-		void	startThread();
+		void	startThreads();
 
 	//override to implement different effects
 	protected:
-		virtual void		preWrite(){};
-		virtual void		writeNextBuffer(unsigned short* wrBuff);
-		virtual void		postWrite();
+		virtual void			preWrite(){};
+		virtual void			writeNextBuffer(unsigned short* wrBuff);
+		virtual void			postWrite();
+
+		unsigned int 			ctrlValues[CONTROLS_COUNT];
 
 
 	private:
-		miosix::Thread*		thread;
+		//values read from pots
+		
+		static miosix::Mutex 	ctrlMutex;
 
-		//effect main loop
-		virtual void		loop();
-		//thread entry point, param is a pointer to AudioEffect
-		static  void		threadMain(void *param);
+		//main effect thread, high priority
+		miosix::Thread*			dspThread;
+		//periodic thread that reads potentiometers, low priority
+		miosix::Thread*			potThread;
 
+		//effect main dsp loop (not static)
+		void					dspLoop();
+		void					potLoop();
+
+		//threads entry points, param is a pointer to AudioEffect
+		static  void			dspThreadMain(void *param);
+		static  void			potThreadMain(void *param);
+
+
+
+		//---------------------------------------------------------------------
 		//default effect vars
 		int 				tim = 0;
 		int 				tim2 = 0;

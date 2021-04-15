@@ -14,6 +14,7 @@ class Oscillator
 		virtual ~Oscillator();
 
 		int				nextSample();
+		float			nextSampleF();
 		void			setFrequency(float freq);
 		void			setAmplitude(float ampl);
 		void			setCenter(int center);
@@ -31,7 +32,6 @@ class Oscillator
 	protected:
 		int					wavetableSize;
 		int*  				wavetable;
-
 
 };
 
@@ -70,8 +70,9 @@ class Synthesizer	:public AudioEffect
 		Oscillator*			osc2;
 		Oscillator*			osc3;
 
-		float				freq = 100;
-		bool 				rising = true;
+		float				lfo1 = 100;
+		bool 				lfo1Rising = true;
+		float				lfo1Incr = 0.01;
 		float				ampl = 0;
 		bool 				rising2 = true;
 
