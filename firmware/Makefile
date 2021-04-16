@@ -23,7 +23,8 @@ source/main.cpp						\
 source/ADC_Driver/ADC_Driver.cpp	\
 source/DAC_Driver/DAC_Driver.cpp	\
 source/AudioEffects/AudioEffect.cpp \
-source/AudioEffects/Synthesizer.cpp
+source/AudioEffects/Synthesizer.cpp	\
+source/LedMatrix_Driver/LedMatrix_Driver.cpp
 
 ##
 ## List here additional static libraries with relative path
