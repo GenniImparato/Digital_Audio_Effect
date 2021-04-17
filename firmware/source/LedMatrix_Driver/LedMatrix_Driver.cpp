@@ -8,8 +8,11 @@ using namespace ledsGpio;
 miosix::Mutex 	LedMatrix_Driver::mutex;
 miosix::Thread*	LedMatrix_Driver::refreshThread;
 
-GpioPin ROWS[LED_MATRIX_ROWS];
-GpioPin COLS[LED_MATRIX_COLUMNS];
+// miosix::GpioPin ROWS[LED_MATRIX_ROWS];
+// miosix::GpioPin COLS[LED_MATRIX_COLUMNS];
+
+std::vector<GpioPin> ROWS;
+std::vector<GpioPin> COLS;
 
 void LedMatrix_Driver::init()
 {
@@ -44,40 +47,40 @@ void LedMatrix_Driver::init()
 	// Turn OFF all leds to avoid a disaster
 	turnOffAllLeds();
 
-	// Puts the GPIOs in 2 arrays to facilitate their usage
-	fillArrays();
+	// Puts the GPIOs in 2 Vectors to facilitate their usage
+	fillVectors();
 	
 	refreshThread = Thread::create(&LedMatrix_Driver::refreshThreadMain, STACK_MIN, 0);
 }
 
-void LedMatrix_Driver::fillArrays(){
+void LedMatrix_Driver::fillVectors(){
 	
-	ROWS[0] = ROW1::getPin();
-	ROWS[1] = ROW2::getPin();
-	ROWS[2] = ROW3::getPin();
-	ROWS[3] = ROW4::getPin();
-	ROWS[4] = ROW5::getPin();
-	ROWS[5] = ROW6::getPin();
-	ROWS[6] = ROW7::getPin();
-	ROWS[7] = ROW8::getPin();
-	ROWS[8] = ROW9::getPin();
-	ROWS[9] = ROW10::getPin();
-	
-	COLS[0] = COL1::getPin();
-	COLS[1] = COL2::getPin();
-	COLS[2] = COL3::getPin();
-	COLS[3] = COL4::getPin();
-	COLS[4] = COL5::getPin();
-	COLS[5] = COL6::getPin();
-	COLS[6] = COL7::getPin();
-	COLS[7] = COL8::getPin();
-	COLS[8] = COL9::getPin();
-	COLS[9] = COL10::getPin();
-	COLS[10] = COL11::getPin();
-	COLS[11] = COL12::getPin();
-	COLS[12] = COL13::getPin();
-	COLS[13] = COL14::getPin();
-	COLS[14] = COL15::getPin();
+	ROWS.push_back(ROW1::getPin());
+	ROWS.push_back(ROW2::getPin());
+	ROWS.push_back(ROW3::getPin());
+	ROWS.push_back(ROW4::getPin());
+	ROWS.push_back(ROW5::getPin());
+	ROWS.push_back(ROW6::getPin());
+	ROWS.push_back(ROW7::getPin());
+	ROWS.push_back(ROW8::getPin());
+	ROWS.push_back(ROW9::getPin());
+	ROWS.push_back(ROW10::getPin());
+
+	COLS.push_back(COL1::getPin());
+	COLS.push_back(COL2::getPin());
+	COLS.push_back(COL3::getPin());
+	COLS.push_back(COL4::getPin());
+	COLS.push_back(COL5::getPin());
+	COLS.push_back(COL6::getPin());
+	COLS.push_back(COL7::getPin());
+	COLS.push_back(COL8::getPin());
+	COLS.push_back(COL9::getPin());
+	COLS.push_back(COL10::getPin());
+	COLS.push_back(COL11::getPin());
+	COLS.push_back(COL12::getPin());
+	COLS.push_back(COL13::getPin());
+	COLS.push_back(COL14::getPin());
+	COLS.push_back(COL15::getPin());
 }
 
 void LedMatrix_Driver::turnOffAllLeds(){

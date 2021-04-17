@@ -6,7 +6,7 @@
 #include "miosix/kernel/scheduler/scheduler.h"
 
 
-#define LED_MATRIX_REFRESH_PERIOD	50	//ms
+#define LED_MATRIX_REFRESH_PERIOD	100	//ms
 
 #define LED_MATRIX_ROWS				10
 #define LED_MATRIX_COLUMNS			15
@@ -26,7 +26,7 @@ class LedMatrix_Driver
 	public:
 		//initialize
 		static void 			init();
-		static void				fillArrays(); //Gpios are handled easier using them in arrays
+		static void				fillVectors(); //Gpios are handled easier using them in Vectors
 
 
 		//thread safe writer methods
