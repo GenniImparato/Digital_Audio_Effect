@@ -12,10 +12,9 @@ typedef Gpio<GPIOD_BASE,4>  reset;
 typedef SoftwareI2C<sda,scl> i2c;
 
 AudioBufferQueue*	DAC_Driver::dmaBuffer;
-unsigned short*		DAC_Driver::dmaZeroBuffer;
 Thread*				DAC_Driver::waitingThread;
 bool				DAC_Driver::dmaRefillWaiting = false;
-Thread*				DAC_Driver::thread;
+//Thread*				DAC_Driver::thread;
 
 /**
  * Waits until a buffer is available for writing
@@ -61,11 +60,7 @@ bool DAC_Driver::IRQdmaRefill()
 	if(!dmaBuffer->tryGetReadableBuffer(buffer,size))
 	{
 		dmaRefillWaiting = true;
-		//thread->IRQwakeup();
-		//Scheduler::IRQfindNextThread();
 		return false;
-		//DMA1_Stream5->M0AR=reinterpret_cast<unsigned int>(dmaZeroBuffer);
-		//size = 256;
 	}
 	else	
 		DMA1_Stream5->M0AR=reinterpret_cast<unsigned int>(buffer);
@@ -94,12 +89,6 @@ bool DAC_Driver::dmaRefill()
 void DAC_Driver::init()
 {
 	dmaBuffer = new AudioBufferQueue();
-
-	dmaZeroBuffer = new unsigned short[AUDIO_BUFFERS_SIZE];
-	for(int i=0;i<AUDIO_BUFFERS_SIZE/2;i++)
-		dmaZeroBuffer[i]=0;
-	for(int i=AUDIO_BUFFERS_SIZE/2;i<AUDIO_BUFFERS_SIZE;i++)
-		dmaZeroBuffer[i]=6000;
 
     {
         FastInterruptDisableLock dLock;
@@ -160,7 +149,7 @@ void DAC_Driver::init()
 	//Start playing
 	dmaRefill();
 
-	thread = Thread::create(&DAC_Driver::threadMain, 64);
+	//thread = Thread::create(&DAC_Driver::threadMain, 64);
 
 	send(0x02,0x9e);
 }
@@ -202,7 +191,7 @@ void DAC_Driver::IRQdmaEndHandler()
 }
 
 
-void DAC_Driver::threadMain(void *param)
+/*void DAC_Driver::threadMain(void *param)
 {
 	while(true)
 	{
@@ -213,7 +202,7 @@ void DAC_Driver::threadMain(void *param)
 			thread->wait();
 		}
 	}
-}
+}*/
 
 /**
  * DMA end of transfer interrupt

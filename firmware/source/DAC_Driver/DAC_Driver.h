@@ -14,13 +14,12 @@ class DAC_Driver
 		DAC_Driver() {};
 
 		static AudioBufferQueue*	dmaBuffer;
-		static unsigned short*		dmaZeroBuffer;
 		static miosix::Thread*		waitingThread;
 		static bool					dmaRefillWaiting;
 
 		//DAC main thread loop
-		static miosix::Thread*		thread;
-		static void					threadMain(void* param);
+		//static miosix::Thread*		thread;
+		//static void					threadMain(void* param);
 
 
 	public:
