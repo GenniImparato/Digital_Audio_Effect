@@ -106,12 +106,12 @@ void LedMatrix_Driver::writeChar(LedChar ledChar){
 		for (int j = 0; j < LED_MATRIX_COLUMNS; j++){
 			if (ledChar[i][j] == true){
 				COLS[j].low();
-				Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
 			}
 			if (ledChar[i][j] == false){
 				COLS[j].high();
 			}
 		}
+		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
 		ROWS[i].high();
 		columnsOff();
 	}
@@ -120,23 +120,18 @@ void LedMatrix_Driver::writeChar(LedChar ledChar){
 void LedMatrix_Driver::writeString(StringBufferQueue *buffer){
 
 	LedChar ledString {0}; // Resulting string, which is just a single boolean matrix
-	//
 	LedChar *str;
 
 	buffer->tryGetWritableBuffer(str);
-	for (int i = 0; i < LED_CHARS; i++){
-		std::memcpy(str[i], zeroMatrix, sizeof(bool[10][15]));
-	}
+
+	addMatrices(ledString, A0);
+	addMatrices(ledString, C1);
+	addMatrices(ledString, A2);
+	addMatrices(ledString, B3);
 	
-	std::memcpy(str[0], A0, sizeof(bool[10][15]));
-	std::memcpy(str[1], C1, sizeof(bool[10][15]));
+	std::memcpy(str[0], ledString, sizeof(bool[10][15]));
 
-	for (int i = 0; i < LED_CHARS; i++)
-	{
-		addMatrices(ledString, str[i]);
-	}
-
-	writeChar(ledString);
+	writeChar(str[0]);
 	
 	// Notifies the other threads that the buffer is full and ready to be read
 	// buffer->bufferFilled(LED_CHARS);

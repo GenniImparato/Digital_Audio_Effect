@@ -7,7 +7,7 @@
 
 // TODO: Maybe I can speed up the GPIOs using ::speed (see gpio_impl.h)
 
-#define LED_MATRIX_REFRESH_PERIOD	1	//ms
+#define LED_MATRIX_REFRESH_PERIOD	2	//ms
 
 #define LED_MATRIX_ROWS				10
 #define LED_MATRIX_COLUMNS			15
