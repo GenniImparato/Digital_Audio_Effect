@@ -1,55 +1,51 @@
 #include "LedMatrix_Driver.h"
 #include "Leds_Gpios.h" // For Gpio namespace
 #include "Leds_Chars.h" 
+// #include <cstdint>
+#include <cstring> // To use memcpy
 
 using namespace miosix;
 using namespace ledsGpio;
 
 miosix::Mutex 	LedMatrix_Driver::mutex;
 miosix::Thread*	LedMatrix_Driver::refreshThread;
-
-// miosix::GpioPin ROWS[LED_MATRIX_ROWS];
-// miosix::GpioPin COLS[LED_MATRIX_COLUMNS];
+StringBufferQueue* LedMatrix_Driver::stringBuffer;
 
 std::vector<GpioPin> ROWS;
 std::vector<GpioPin> COLS;
 
+
+void addMatrices(LedChar result, LedChar ledChar){
+	for (int i = 0; i < LED_MATRIX_ROWS; i++){
+		for (int j = 0; j < LED_MATRIX_COLUMNS; j++){
+			if (result[i][j] == 0)		
+				result[i][j] += ledChar[i][j];
+		}
+	}
+
+} 
+
 void LedMatrix_Driver::init()
 {
-	// Set OUTPUT mode on every led
-	ROW1::mode(Mode::OUTPUT);
-	ROW2::mode(Mode::OUTPUT);
-	ROW3::mode(Mode::OUTPUT);
-	ROW4::mode(Mode::OUTPUT);
-	ROW5::mode(Mode::OUTPUT);
-	ROW6::mode(Mode::OUTPUT);
-	ROW7::mode(Mode::OUTPUT);
-	ROW8::mode(Mode::OUTPUT);
-	ROW9::mode(Mode::OUTPUT);
-	ROW10::mode(Mode::OUTPUT);
+	// Puts the GPIOs in 2 Vectors to facilitate their usage
+	fillVectors();
 
-	COL1::mode(Mode::OUTPUT);
-	COL2::mode(Mode::OUTPUT);
-	COL3::mode(Mode::OUTPUT);
-	COL4::mode(Mode::OUTPUT);
-	COL5::mode(Mode::OUTPUT);
-	COL6::mode(Mode::OUTPUT);
-	COL7::mode(Mode::OUTPUT);
-	COL8::mode(Mode::OUTPUT);
-	COL9::mode(Mode::OUTPUT);
-	COL10::mode(Mode::OUTPUT);
-	COL11::mode(Mode::OUTPUT);
-	COL12::mode(Mode::OUTPUT);
-	COL13::mode(Mode::OUTPUT);
-	COL14::mode(Mode::OUTPUT);
-	COL15::mode(Mode::OUTPUT);
+	// Buffer creation
+	stringBuffer = new StringBufferQueue();
+
+	// Set OUTPUT mode on every led
+	for (int i = 0; i < LED_MATRIX_ROWS; i++)
+	{
+		ROWS[i].mode(Mode::OUTPUT);
+	}
+	for (int i = 0; i < LED_MATRIX_COLUMNS; i++)
+	{
+		COLS[i].mode(Mode::OUTPUT);
+	}
 
 	// Turn OFF all leds to avoid a disaster
 	turnOffAllLeds();
 
-	// Puts the GPIOs in 2 Vectors to facilitate their usage
-	fillVectors();
-	
 	refreshThread = Thread::create(&LedMatrix_Driver::refreshThreadMain, STACK_MIN, 0);
 }
 
@@ -84,54 +80,66 @@ void LedMatrix_Driver::fillVectors(){
 }
 
 void LedMatrix_Driver::turnOffAllLeds(){
-	
-	ROW1::high();
-	ROW2::high();
-	ROW3::high();
-	ROW4::high();
-	ROW5::high();
-	ROW6::high();
-	ROW7::high();
-	ROW8::high();
-	ROW9::high();
-	ROW10::high();
-
-	COL1::high();
-	COL2::high();
-	COL3::high();
-	COL4::high();
-	COL5::high();
-	COL6::high();
-	COL7::high();
-	COL8::high();
-	COL9::high();
-	COL10::high();
-	COL11::high();
-	COL12::high();
-	COL13::high();
-	COL14::high();
-	COL15::high();
+	rowsOff();
+	columnsOff();
 }
 
-void LedMatrix_Driver::setChar(const bool ledMatrix[LED_MATRIX_ROWS][LED_MATRIX_COLUMNS]){ 
-
-	for (int i = 0; i < LED_MATRIX_ROWS; i++)
+void LedMatrix_Driver::rowsOff() {
+	for (unsigned int i = 0; i < ROWS.size(); i++)
 	{
-		for (int j = 0; j < LED_MATRIX_COLUMNS; j++)
-		{
-			if (ledMatrix[i][j] == true)
-			{
-				ROWS[i].low();
+		ROWS[i].high();
+	}
+	
+}
+
+void LedMatrix_Driver::columnsOff() {
+	for (unsigned int i = 0; i < COLS.size(); i++)
+	{
+		COLS[i].high();
+	}
+	
+}
+
+void LedMatrix_Driver::writeChar(LedChar ledChar){ 
+	for (int i = 0; i < LED_MATRIX_ROWS; i++){
+		ROWS[i].low();
+		for (int j = 0; j < LED_MATRIX_COLUMNS; j++){
+			if (ledChar[i][j] == true){
 				COLS[j].low();
 				Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
 			}
-			if (ledMatrix[i][j] == false)
-			{
-				ROWS[i].high();
+			if (ledChar[i][j] == false){
 				COLS[j].high();
 			}
 		}
+		ROWS[i].high();
+		columnsOff();
 	}
+}
+
+void LedMatrix_Driver::writeString(StringBufferQueue *buffer){
+
+	LedChar ledString {0}; // Resulting string, which is just a single boolean matrix
+	//
+	LedChar *str;
+
+	buffer->tryGetWritableBuffer(str);
+	for (int i = 0; i < LED_CHARS; i++){
+		std::memcpy(str[i], zeroMatrix, sizeof(bool[10][15]));
+	}
+	
+	std::memcpy(str[0], A0, sizeof(bool[10][15]));
+	std::memcpy(str[1], C1, sizeof(bool[10][15]));
+
+	for (int i = 0; i < LED_CHARS; i++)
+	{
+		addMatrices(ledString, str[i]);
+	}
+
+	writeChar(ledString);
+	
+	// Notifies the other threads that the buffer is full and ready to be read
+	// buffer->bufferFilled(LED_CHARS);
 }
 
 void LedMatrix_Driver::refreshThreadMain(void *param)
@@ -139,62 +147,6 @@ void LedMatrix_Driver::refreshThreadMain(void *param)
 	while(true)
 	{
 		//refresh next row
-		setChar(A0);
-		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
-		turnOffAllLeds();
-
-		setChar(A1);
-		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
-		turnOffAllLeds();
-
-		setChar(A2);
-		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
-		turnOffAllLeds();
-
-		setChar(A3);
-		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
-		turnOffAllLeds();
-
-		setChar(A4);
-		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
-		turnOffAllLeds();
-
-		setChar(A5);
-		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
-		turnOffAllLeds();
-
-		setChar(A6);
-		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
-		turnOffAllLeds();
-
-		setChar(A7);
-		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
-		turnOffAllLeds();
-
-		setChar(A8);
-		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
-		turnOffAllLeds();
-
-		setChar(A9);
-		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
-		turnOffAllLeds();
-
-		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
+		writeString(stringBuffer);
 	}
 }
-
-void LedMatrix_Driver::setLed(int x, int y, bool value)
-{
-
-}
-
-void LedMatrix_Driver::writeChar(int x, int y, char c)
-{
-
-}
-
-void LedMatrix_Driver::writeString(int y, char *stringPtr)
-{
-
-}
-

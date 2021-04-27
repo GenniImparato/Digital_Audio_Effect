@@ -5,11 +5,16 @@
 #include "../config.h"
 #include "miosix/kernel/scheduler/scheduler.h"
 
+// TODO: Maybe I can speed up the GPIOs using ::speed (see gpio_impl.h)
 
-#define LED_MATRIX_REFRESH_PERIOD	100	//ms
+#define LED_MATRIX_REFRESH_PERIOD	1	//ms
 
 #define LED_MATRIX_ROWS				10
 #define LED_MATRIX_COLUMNS			15
+#define LED_CHARS					10
+
+typedef bool LedChar [10][15];	
+
 
 //static class to manage led matrix
 class LedMatrix_Driver
@@ -22,22 +27,22 @@ class LedMatrix_Driver
 
 		static miosix::Mutex 	mutex;
 		static miosix::Thread*	refreshThread;
+		static StringBufferQueue*	stringBuffer;
+		static std::vector<bool [LED_MATRIX_ROWS][LED_MATRIX_COLUMNS]> ledChars;
+
+
+
 
 	public:
 		//initialize
 		static void 			init();
 		static void				fillVectors(); //Gpios are handled easier using them in Vectors
-
+		static void				turnOffAllLeds();
+		static void				rowsOff();
+		static void 			columnsOff();
 
 		//thread safe writer methods
-		static void				turnOffAllLeds();
-		static void				setChar(const bool ledMatrix[LED_MATRIX_ROWS][LED_MATRIX_COLUMNS]);
-		static void				setLed(int x, int y, bool value);
-		static void 			writeChar(int x, int y, char c);
-		static void 			writeString(int y, char *stringPtr);
-
-
+		static void				writeChar(bool ledChar[LED_MATRIX_ROWS][LED_MATRIX_COLUMNS]);
+		static void				writeString(StringBufferQueue *buffer);
 };
-
-
 #endif
