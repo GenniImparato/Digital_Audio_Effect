@@ -1,4 +1,5 @@
 #include "Synthesizer.h"
+#include "../DAC_Driver/DAC_Driver.h"
 #include <math.h> 
 
 Oscillator::Oscillator(int wavetableSize, float frequency, float amplitude, int center)

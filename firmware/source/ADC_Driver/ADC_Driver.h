@@ -3,6 +3,7 @@
 
 #include <miosix.h>
 #include "../config.h"
+#include "miosix/kernel/scheduler/scheduler.h"
 
 #define POTS_COUNT				4
 
@@ -16,16 +17,41 @@ class ADC_Driver
 		//potentiometers/channels map
 		static const unsigned short potChannels[POTS_COUNT];
 
+		static AudioBufferQueue*   	dmaBuffer;
+		static miosix::Thread*		waitingThread;
+
+		static unsigned short buffer[AUDIO_BUFFERS_SIZE];
+
+		static void 				    configureTIM2();
+		static void						configureADC2();
+
 	public:
 
 		//initialize ADC
-		static void		 		init();
+		static void		 				init();
 		
-		//performs a single conversion
-		static unsigned int 	singleConversion(unsigned short channel);
+		//performs a single conversion (uses ADC1)
+		static unsigned int 			singleConversion(unsigned short channel);
 
-		//performs a single conversion given pot id
-		static unsigned int 	singleConversionPot(unsigned short pot);
+		//performs a single conversion given pot id (uses ADC1)
+		static unsigned int 			singleConversionPot(unsigned short pot);
+
+		//suspends readerThread until a buffer is available for reading (uses ADC2)
+		static const unsigned short * 	getReadableBuffer(miosix::Thread* readerThread);
+
+		//Configure the DMA to do another transfer
+		static bool 					IRQdmaRestart();
+
+		//Configure the DMA to do another transfer from non-interrupt code
+		static bool 					dmaRestart();
+
+		
+
+		static void 					bufferEmptied();
+
+
+		static void 					IRQdmaEndHandler();
+		static void 					IRQTIM2Handler(void);
 };
 
 #endif

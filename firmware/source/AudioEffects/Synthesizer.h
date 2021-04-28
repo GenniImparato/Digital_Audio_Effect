@@ -21,17 +21,17 @@ class Oscillator
 		void			setPhase(int phase);
 
 	private:
-		float				currIndex;
-		float 				duration;
+		float			currIndex;
+		float 			duration;
 
-		float 				amplitude;
-    	float 				frequency;
-    	int 				center;
-    	int					phase;
+		float 			amplitude;
+    	float 			frequency;
+    	int 			center;
+    	int				phase;
 
 	protected:
-		int					wavetableSize;
-		int*  				wavetable;
+		int				wavetableSize;
+		int*  			wavetable;
 
 };
 

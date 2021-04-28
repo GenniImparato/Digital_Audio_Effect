@@ -11,7 +11,7 @@
 
 
 #define CONTROLS_COUNT				4
-#define CONTROLS_REFRESH_PERIOD		10 // ms
+#define CONTROLS_REFRESH_PERIOD		50 // ms
 
 //base class for audio effect
 //runs on a its own thread
@@ -25,31 +25,37 @@ class AudioEffect
 
 		void	startThreads();
 
+		unsigned short tmpBuff[AUDIO_BUFFERS_SIZE];
+
 	//override to implement different effects
 	protected:
+		//values read from pots
+		unsigned int 			ctrlValues[CONTROLS_COUNT];
+		//main effect thread, high priority
+		
+
 		virtual void			preWrite(){};
 		virtual void			writeNextBuffer(unsigned short* wrBuff);
 		virtual void			postWrite();
 
-		unsigned int 			ctrlValues[CONTROLS_COUNT];
-
 
 	private:
-		//values read from pots
-		
 		static miosix::Mutex 	ctrlMutex;
+		miosix::Mutex 			buffMutex;
 
-		//main effect thread, high priority
-		miosix::Thread*			dspThread;
 		//periodic thread that reads potentiometers, low priority
 		miosix::Thread*			potThread;
+		miosix::Thread*			readADCThread;
+		miosix::Thread*			writeDACThread;
 
 		//effect main dsp loop (not static)
-		void					dspLoop();
+		void					readADCLoop();
+		void					writeDACLoop();
 		void					potLoop();
 
 		//threads entry points, param is a pointer to AudioEffect
-		static  void			dspThreadMain(void *param);
+		static  void			readADCThreadMain(void *param);
+		static  void			writeDACThreadMain(void *param);
 		static  void			potThreadMain(void *param);
 
 
