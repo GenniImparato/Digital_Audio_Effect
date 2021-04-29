@@ -11,9 +11,14 @@
 
 #define LED_MATRIX_ROWS				10
 #define LED_MATRIX_COLUMNS			15
+
+#define LED_SUBMATRIX_ROWS			5
+#define LED_SUBMATRIX_COLUMNS		3
+
 #define LED_CHARS					10
 
-typedef bool LedChar [10][15];	
+typedef bool LedChar [LED_SUBMATRIX_ROWS][LED_SUBMATRIX_COLUMNS];	
+typedef bool LedString [LED_MATRIX_ROWS][LED_MATRIX_COLUMNS];
 
 
 //static class to manage led matrix
@@ -28,10 +33,6 @@ class LedMatrix_Driver
 		static miosix::Mutex 	mutex;
 		static miosix::Thread*	refreshThread;
 		static StringBufferQueue*	stringBuffer;
-		static std::vector<bool [LED_MATRIX_ROWS][LED_MATRIX_COLUMNS]> ledChars;
-
-
-
 
 	public:
 		//initialize
@@ -42,7 +43,8 @@ class LedMatrix_Driver
 		static void 			columnsOff();
 
 		//thread safe writer methods
-		static void				writeChar(bool ledChar[LED_MATRIX_ROWS][LED_MATRIX_COLUMNS]);
-		static void				writeString(StringBufferQueue *buffer);
+		static void				setChar(LedString ledString, LedChar LedChar, int ledMatrixLayer, int ledMatrixColumn);
+		static void				setString(LedString *bufStr, std::string str);
+		static void				writeLeds(LedString ledChar);
 };
 #endif
