@@ -4,21 +4,25 @@
 #include "AudioEffect.h"
 
 
-class Distorsion	:public AudioEffect
+class Delay	:public AudioEffect
 {
 	public:
-		Distorsion(){};
-		~Distorsion(){};
+		Delay();
+		~Delay(){};
 
 		//overriden methods
-		void				preWrite();
+		void				preWrite(){};
 		void				writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer);
-		void				postWrite(){};
+		void				postWrite();
 
 	private:
 		float				topThresh = 0.8;
 		float				botThresh = 0.2;
 		float				dist=0.1;
+
+		int					delayIndex = 0;
+
+		unsigned short		delayBuff[AUDIO_BUFFERS_SIZE*40];
 
 };
 

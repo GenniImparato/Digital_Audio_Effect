@@ -26,7 +26,7 @@ void AudioChain::init()
 	nextEffect();
 	//nextEffect();
 
-	nextSource();
+	//nextSource();
 }
 
 /*AudioChain::~AudioChain()
@@ -66,7 +66,7 @@ void AudioChain::nextEffect()
 			break;
 
 		case 1:
-			activeEffect = new Distorsion();
+			activeEffect = new Delay();
 			break;
 	}
 }
@@ -90,7 +90,7 @@ void AudioChain::readADCLoop()
 	{	
 		Lock<Mutex> dLock(buffMutex);
 		for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
-			adcBuff[i] = map(inBuff[i], 1, 2000, 1, 60000);
+			adcBuff[i] = map(inBuff[i], 1, 4096, 1, 63000);
 
 	}
     //printf("Buffer[%d] = %d\n", count, tmpBuff[100]);

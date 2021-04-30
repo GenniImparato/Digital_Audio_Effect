@@ -3,6 +3,7 @@
 
 #include "AudioEffect.h"
 
+
 #define PI           		3.14159265358979323846 
 #define SAMPLE_DURATION		(1.0/44100.0)
 
@@ -19,15 +20,22 @@ class Oscillator
 		void			setAmplitude(float ampl);
 		void			setCenter(int center);
 		void			setPhase(int phase);
+		void			update();
 
 	private:
 		float			currIndex;
 		float 			duration;
 
 		float 			amplitude;
-    	float 			frequency;
+    	float 			basefrequency;
+    	float			patternFrequency;
     	int 			center;
     	int				phase;
+
+    	int				pattern = 0;
+    	int				patternIndex1 = 0;
+    	int				patternIndex2 = 0;
+    	bool			patternIndex2Updated = false;
 
 	protected:
 		int				wavetableSize;

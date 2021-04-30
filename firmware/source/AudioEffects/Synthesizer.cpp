@@ -1,6 +1,8 @@
 #include "Synthesizer.h"
 #include "../DAC_Driver/DAC_Driver.h"
 #include <math.h> 
+#include <cstdlib> 
+#include <ctime> 
 
 Oscillator::Oscillator(int wavetableSize, float frequency, float amplitude, int center)
 {
@@ -27,7 +29,7 @@ Oscillator::~Oscillator()
 
 void Oscillator::setFrequency(float freq)
 {
-	this->frequency = freq;
+	this->basefrequency = freq;
 }
 
 void Oscillator::setAmplitude(float ampl)
@@ -48,17 +50,45 @@ void Oscillator::setPhase(int phase)
 int	Oscillator::nextSample()
 {
 	int ret = amplitude*wavetable[(int)(currIndex)] + 0.5;
-	currIndex += frequency*duration;
+
+	currIndex += patternFrequency*duration;
 	if(currIndex >= wavetableSize)
 		currIndex = 0;
 
 	return ret;
 }
 
+void Oscillator::update()
+{
+	patternIndex1 ++;
+	if(patternIndex1 >= 10)
+	{
+		patternIndex1 = 0;
+
+		patternIndex2++;
+		patternIndex2Updated=true;
+		if(patternIndex2 >= 10)
+			patternIndex2=0;
+	}
+
+	if(pattern == 0)
+		patternFrequency = basefrequency;
+	else if(pattern == 1)
+		patternFrequency = basefrequency+200*patternIndex2;
+	else if(pattern == 2)
+	{
+		if(patternIndex2Updated)
+		{
+			patternIndex2Updated = false;
+			patternFrequency = 3*(rand()%1000)+20;
+		}
+	}
+}
+
 float Oscillator::nextSampleF()
 {
 	float ret = amplitude*wavetable[(int)(currIndex)]/(float)wavetableSize + center;
-	currIndex += frequency*duration;
+	currIndex += patternFrequency*duration;
 	if(currIndex >= wavetableSize)
 		currIndex = 0;
 
@@ -121,6 +151,8 @@ Synthesizer::Synthesizer()	:AudioEffect()
 	osc1 = new SineOscillator(256, 500, 0.25, OUT_BUFFER_CENTER);
 	osc2 = new SquareOscillator(256, 80, 0.25, OUT_BUFFER_CENTER);
 	osc3 = new SawOscillator(256, 80, 0.25, OUT_BUFFER_CENTER);
+
+	srand((unsigned)time(0)); 
 }
 
 Synthesizer::~Synthesizer()
@@ -134,7 +166,7 @@ void Synthesizer::preWrite()
 {
 }
 
-void Synthesizer::writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer)
+void Synthesizer::writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer=nullptr)
 {
 	for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
 	{
@@ -175,4 +207,8 @@ void Synthesizer::postWrite()
 	osc2->setFrequency(ctrlValues[1]/3);
 	osc2->setAmplitude(lfo1);
 	osc3->setFrequency(ctrlValues[2]/3);
+
+	osc1->update();
+	osc2->update();
+	osc3->update();
 }
