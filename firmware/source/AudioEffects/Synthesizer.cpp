@@ -134,10 +134,18 @@ void Synthesizer::preWrite()
 {
 }
 
-void Synthesizer::writeNextBuffer(unsigned short* wrBuff)
+void Synthesizer::writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer)
 {
 	for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
-		wrBuff[i] = (osc1->nextSample() + osc2->nextSample() + osc3->nextSample())/3;
+	{
+		wrBuff[i] = 0;
+		if(ctrlValues[0] > 500)
+			wrBuff[i] += osc1->nextSample()/3;
+		if(ctrlValues[1] > 500)
+			wrBuff[i] += osc2->nextSample()/3;
+		if(ctrlValues[2] > 500)
+			wrBuff[i] += osc3->nextSample()/3;
+	}
 }
 
 

@@ -62,7 +62,7 @@ class Synthesizer	:public AudioEffect
 
 		//overriden methods
 		void				preWrite();
-		void				writeNextBuffer(unsigned short* wrBuff);
+		void				writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer);
 		void				postWrite();
 
 	private:

@@ -20,10 +20,13 @@ SUBDIRS := $(KPATH)
 ##
 SRC :=                              \
 source/main.cpp						\
+source/utils.cpp					\
+source/AudioChain.cpp				\
 source/ADC_Driver/ADC_Driver.cpp	\
 source/DAC_Driver/DAC_Driver.cpp	\
 source/AudioEffects/AudioEffect.cpp \
 source/AudioEffects/Synthesizer.cpp	\
+source/AudioEffects/Distorsion.cpp	\
 source/LedMatrix_Driver/LedMatrix_Driver.cpp
 
 ##

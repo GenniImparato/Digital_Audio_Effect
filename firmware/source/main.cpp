@@ -1,39 +1,36 @@
 #include <miosix.h>
 #include "config.h"
+#include "AudioChain.h"
 #include "ADC_Driver/ADC_Driver.h"
 #include "DAC_Driver/DAC_Driver.h"
 #include "LedMatrix_Driver/LedMatrix_Driver.h"
-#include "AudioEffects/AudioEffect.h"
-#include "AudioEffects/Synthesizer.h"
 
 using namespace miosix;
 
-typedef Gpio<GPIOA_BASE,1> analogIn;
-
-AudioEffect			*effect;
+//AudioEffect			*effect;
 
 
 int main()
 {
-	analogIn::mode(Mode::INPUT_ANALOG);
-
-	effect = new AudioEffect();
+	//effect = new Distorsion();
 
 	LedMatrix_Driver::init();
+
+	AudioChain::init();
+
 	ADC_Driver::init();
 	DAC_Driver::init();
 	DAC_Driver::setVolume(0);
 
-	//starts new threads
-	effect->startThreads();
-	Thread::sleep(1000);
+	
+	AudioChain::startThreads();
 
 	//start blink
 	for(int i=0; i<35; i++)
 	{
-		//ledOn();
+		ledOn();
 		Thread::sleep(100);
-		//ledOff();
+		ledOff();
 		Thread::sleep(100);
 	}
 
@@ -42,7 +39,7 @@ int main()
     {
 		ledOff();
 		Thread::sleep(1000);
-		//ledOff();
+		ledOff();
 		Thread::sleep(1000);
     }
 }

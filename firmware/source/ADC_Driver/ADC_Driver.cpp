@@ -100,7 +100,7 @@ void ADC_Driver::configureADC2()
     ADC2->CR1 &= ~ADC_CR1_SCAN; //SCAN mode disabled    
     ADC2->CR2 &= ~ADC_CR2_CONT; //Disable continuous conversion
                     
-    ADC2->SMPR1 |= ADC_SMPR1_SMP10;
+    ADC2->SMPR1 |= ADC_SMPR1_SMP14_2 | ADC_SMPR1_SMP14_1;
     
     //Trigger on Rising edge
     ADC2->CR2 &=  ~(1<<29);
