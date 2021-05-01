@@ -12,7 +12,6 @@ class Delay	:public AudioEffect
 		~Delay(){};
 
 		//overriden methods
-		void				preWrite(){};
 		void				writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer);
 		void				postWrite();
 

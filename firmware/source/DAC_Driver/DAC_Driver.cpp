@@ -11,10 +11,10 @@ typedef Gpio<GPIOC_BASE,12> sdin;
 typedef Gpio<GPIOD_BASE,4>  reset;
 typedef SoftwareI2C<sda,scl> i2c;
 
-AudioBufferQueue*	DAC_Driver::dmaBuffer;
-Thread*				DAC_Driver::waitingThread;
-bool				DAC_Driver::dmaRefillWaiting = false;
-//Thread*				DAC_Driver::thread;
+AudioBufferQueue*   DAC_Driver::dmaBuffer;
+Thread*             DAC_Driver::waitingThread;
+bool                DAC_Driver::dmaRefillWaiting = false;
+//Thread*               DAC_Driver::thread;
 
 /**
  * Waits until a buffer is available for writing
@@ -22,73 +22,73 @@ bool				DAC_Driver::dmaRefillWaiting = false;
  */
 unsigned short * DAC_Driver::getWritableBuffer(miosix::Thread* writerThread)
 {
-	FastInterruptDisableLock dLock;
-	waitingThread = writerThread;
-	unsigned short *result;
-	while(dmaBuffer->tryGetWritableBuffer(result)==false)
-	{
-		waitingThread->IRQwait();
-		{
-			FastInterruptEnableLock eLock(dLock);
-			Thread::yield();
-		}
-	}
-	return result;
+    FastInterruptDisableLock dLock;
+    waitingThread = writerThread;
+    unsigned short *result;
+    while(dmaBuffer->tryGetWritableBuffer(result)==false)
+    {
+        waitingThread->IRQwait();
+        {
+            FastInterruptEnableLock eLock(dLock);
+            Thread::yield();
+        }
+    }
+    return result;
 }
 
 void DAC_Driver::bufferFilled()
 {
-	FastInterruptDisableLock dLock;
-	dmaBuffer->bufferFilled(dmaBuffer->bufferMaxSize());
-	/*if(dmaRefillWaiting)
-	{
-		dmaRefillWaiting=false;
-		dmaRefill();
-	}*/
+    FastInterruptDisableLock dLock;
+    dmaBuffer->bufferFilled(dmaBuffer->bufferMaxSize());
+    /*if(dmaRefillWaiting)
+    {
+        dmaRefillWaiting=false;
+        dmaRefill();
+    }*/
 }
 
 //Configure the DMA to do another transfer
 bool DAC_Driver::IRQdmaRefill()
 {
     const unsigned short *buffer;
-	unsigned int size;
+    unsigned int size;
 
     DMA1_Stream5->CR=0;
-	DMA1_Stream5->PAR=reinterpret_cast<unsigned int>(&SPI3->DR);
+    DMA1_Stream5->PAR=reinterpret_cast<unsigned int>(&SPI3->DR);
 
-	//if no buffer available
-	if(!dmaBuffer->tryGetReadableBuffer(buffer,size))
-	{
-		dmaRefillWaiting = true;
-		return false;
-	}
-	else	
-		DMA1_Stream5->M0AR=reinterpret_cast<unsigned int>(buffer);
+    //if no buffer available
+    if(!dmaBuffer->tryGetReadableBuffer(buffer,size))
+    {
+        dmaRefillWaiting = true;
+        return false;
+    }
+    else    
+        DMA1_Stream5->M0AR=reinterpret_cast<unsigned int>(buffer);
 
-	DMA1_Stream5->NDTR=size;
-	DMA1_Stream5->CR=DMA_SxCR_PL_1    | //High priority DMA stream
+    DMA1_Stream5->NDTR=size;
+    DMA1_Stream5->CR=DMA_SxCR_PL_1    | //High priority DMA stream
                      DMA_SxCR_MSIZE_0 | //Read  16bit at a time from RAM
-					 DMA_SxCR_PSIZE_0 | //Write 16bit at a time to SPI
-				     DMA_SxCR_MINC    | //Increment RAM pointer
-			         DMA_SxCR_DIR_0   | //Memory to peripheral direction
-			         DMA_SxCR_TCIE    | //Interrupt on completion
-			  	     DMA_SxCR_EN;       //Start the DMA
+                     DMA_SxCR_PSIZE_0 | //Write 16bit at a time to SPI
+                     DMA_SxCR_MINC    | //Increment RAM pointer
+                     DMA_SxCR_DIR_0   | //Memory to peripheral direction
+                     DMA_SxCR_TCIE    | //Interrupt on completion
+                     DMA_SxCR_EN;       //Start the DMA
 
-	return true;
+    return true;
 }
 
 
 //Helper function used to start a DMA transfer from non-interrupt code
 bool DAC_Driver::dmaRefill()
 {
-	FastInterruptDisableLock dLock;
-	return IRQdmaRefill();
+    FastInterruptDisableLock dLock;
+    return IRQdmaRefill();
 }
 
 //initialize DAC, DMA and GPIO
 void DAC_Driver::init()
 {
-	dmaBuffer = new AudioBufferQueue();
+    dmaBuffer = new AudioBufferQueue();
 
     {
         FastInterruptDisableLock dLock;
@@ -132,26 +132,26 @@ void DAC_Driver::init()
     
     SPI3->CR2=SPI_CR2_TXDMAEN;
     SPI3->I2SPR=  SPI_I2SPR_MCKOE | 6;
-	SPI3->I2SCFGR=SPI_I2SCFGR_I2SMOD    //I2S mode selected
+    SPI3->I2SCFGR=SPI_I2SCFGR_I2SMOD    //I2S mode selected
                 | SPI_I2SCFGR_I2SE      //I2S Enabled
                 | SPI_I2SCFGR_I2SCFG_1; //Master transmit
 
     NVIC_SetPriority(DMA1_Stream5_IRQn,2);//High priority for DMA
-	NVIC_EnableIRQ(DMA1_Stream5_IRQn);    
+    NVIC_EnableIRQ(DMA1_Stream5_IRQn);    
 
     
     //set zero buffer
     unsigned short* wrBuff = getWritableBuffer(Thread::IRQgetCurrentThread());
-	for(int i=0;i<AUDIO_BUFFERS_SIZE;i++)
-		wrBuff[i]=0;
-	bufferFilled();
+    for(int i=0;i<AUDIO_BUFFERS_SIZE;i++)
+        wrBuff[i]=0;
+    bufferFilled();
     
-	//Start playing
-	dmaRefill();
+    //Start playing
+    dmaRefill();
 
-	//thread = Thread::create(&DAC_Driver::threadMain, 64);
+    //thread = Thread::create(&DAC_Driver::threadMain, 64);
 
-	send(0x02,0x9e);
+    send(0x02,0x9e);
 }
 
 void DAC_Driver::send(unsigned char index, unsigned char data)
@@ -175,33 +175,33 @@ void DAC_Driver::setVolume(int db)
 //DMA end of transer interrupt handler
 void DAC_Driver::IRQdmaEndHandler()
 {
-	DMA1->HIFCR=DMA_HIFCR_CTCIF5  |
+    DMA1->HIFCR=DMA_HIFCR_CTCIF5  |
                 DMA_HIFCR_CTEIF5  |
                 DMA_HIFCR_CDMEIF5 |
                 DMA_HIFCR_CFEIF5;
-	dmaBuffer->bufferEmptied();
-	
-	if(IRQdmaRefill())
-	{
-		waitingThread->IRQwakeup();
-		if(waitingThread->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
-			Scheduler::IRQfindNextThread();
-	}
+    dmaBuffer->bufferEmptied();
+    
+    if(IRQdmaRefill())
+    {
+        waitingThread->IRQwakeup();
+        if(waitingThread->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
+            Scheduler::IRQfindNextThread();
+    }
 
 }
 
 
 /*void DAC_Driver::threadMain(void *param)
 {
-	while(true)
-	{
-		if(dmaRefillWaiting)
-		{
-			dmaRefillWaiting = false;
-			dmaRefill();
-			thread->wait();
-		}
-	}
+    while(true)
+    {
+        if(dmaRefillWaiting)
+        {
+            dmaRefillWaiting = false;
+            dmaRefill();
+            thread->wait();
+        }
+    }
 }*/
 
 /**
@@ -210,8 +210,8 @@ void DAC_Driver::IRQdmaEndHandler()
 void __attribute__((naked)) DMA1_Stream5_IRQHandler()
 {
     saveContext();
-	asm volatile("bl _Z17I2SdmaHandlerImplv");
-	restoreContext();
+    asm volatile("bl _Z17I2SdmaHandlerImplv");
+    restoreContext();
 }
 
 /**
@@ -219,5 +219,5 @@ void __attribute__((naked)) DMA1_Stream5_IRQHandler()
  */
 void __attribute__((used)) I2SdmaHandlerImpl()
 {
-	DAC_Driver::IRQdmaEndHandler();
+    DAC_Driver::IRQdmaEndHandler();
 }

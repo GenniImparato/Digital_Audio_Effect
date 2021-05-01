@@ -15,7 +15,6 @@ class AudioEffect
         //terminates threads
         virtual ~AudioEffect();
 
-        virtual void            preWrite(){};
         virtual void            writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer);
         virtual void            postWrite(){};
 
