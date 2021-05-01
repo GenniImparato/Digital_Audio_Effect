@@ -6,6 +6,7 @@
 
 #define PI           		3.14159265358979323846 
 #define SAMPLE_DURATION		(1.0/44100.0)
+#define OSCILLATORS_COUNT	3
 
 
 class Oscillator
@@ -20,6 +21,7 @@ class Oscillator
 		void			setAmplitude(float ampl);
 		void			setCenter(int center);
 		void			setPhase(int phase);
+		void			setPattern(int pattern);
 		void			update();
 
 	private:
@@ -27,8 +29,9 @@ class Oscillator
 		float 			duration;
 
 		float 			amplitude;
+		float			patternAmplitude = 1;
     	float 			basefrequency;
-    	float			patternFrequency;
+    	float			patternFrequency = 0;
     	int 			center;
     	int				phase;
 
@@ -74,15 +77,15 @@ class Synthesizer	:public AudioEffect
 		void				postWrite();
 
 	private:
-		Oscillator*			osc1;
-		Oscillator*			osc2;
-		Oscillator*			osc3;
+		Oscillator*			osc[OSCILLATORS_COUNT];
 
 		float				lfo1 = 100;
 		bool 				lfo1Rising = true;
 		float				lfo1Incr = 0.01;
 		float				ampl = 0;
 		bool 				rising2 = true;
+
+		bool				holdControl[OSCILLATORS_COUNT];
 
 };
 

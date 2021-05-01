@@ -36,6 +36,8 @@ void ADC_Driver::init()
 	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
     RCC_SYNC();
 
+    ADC->CCR |= (1<<16)|(1<<17);
+
    	//activate ADC1
     ADC1->CR2 = ADC_CR2_ADON;
 
@@ -100,7 +102,8 @@ void ADC_Driver::configureADC2()
     ADC2->CR1 &= ~ADC_CR1_SCAN; //SCAN mode disabled    
     ADC2->CR2 &= ~ADC_CR2_CONT; //Disable continuous conversion
                     
-    ADC2->SMPR1 |= ADC_SMPR1_SMP14_2 | ADC_SMPR1_SMP14_1;
+    ADC1->SMPR1 =   0xFFFFFFFF;
+    ADC1->SMPR2 =   0xFFFFFFFF; 
     
     //Trigger on Rising edge
     ADC2->CR2 &=  ~(1<<29);
@@ -127,9 +130,8 @@ unsigned int ADC_Driver::singleConversion(unsigned short channel)
 	ADC1->CR1 = 0;
 
 	//select sample time
-    ADC1->SMPR1 = 	  ADC_SMPR1_SMP10_2
-              		| ADC_SMPR1_SMP10_1
-              		| ADC_SMPR1_SMP10_0; //239.5 cycles sample time
+    ADC1->SMPR1 =   0xFFFFFFFF;
+    ADC1->SMPR2 = 	0xFFFFFFFF; //239.5 cycles sample time
 
     //select number of converions
     ADC1->SQR1 = 0; 		//single conversion

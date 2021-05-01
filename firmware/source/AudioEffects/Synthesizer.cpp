@@ -47,15 +47,23 @@ void Oscillator::setPhase(int phase)
 	this->currIndex+= phase;
 }
 
+void Oscillator::setPattern(int pattern)
+{
+	this->pattern = pattern;
+}
+
 int	Oscillator::nextSample()
 {
-	int ret = amplitude*wavetable[(int)(currIndex)] + 0.5;
+	if(basefrequency < 40)
+		return 0;
+
+	float ret = amplitude*patternAmplitude*(float)(wavetable[(int)(currIndex)]);
 
 	currIndex += patternFrequency*duration;
 	if(currIndex >= wavetableSize)
 		currIndex = 0;
 
-	return ret;
+	return (int)ret;
 }
 
 void Oscillator::update()
@@ -71,16 +79,31 @@ void Oscillator::update()
 			patternIndex2=0;
 	}
 
+	//NORMAL
 	if(pattern == 0)
 		patternFrequency = basefrequency;
+	//ARPEGGIO
 	else if(pattern == 1)
 		patternFrequency = basefrequency+200*patternIndex2;
+	//RANDOM
 	else if(pattern == 2)
 	{
 		if(patternIndex2Updated)
 		{
 			patternIndex2Updated = false;
 			patternFrequency = 3*(rand()%1000)+20;
+		}
+	}
+	//RANDOM
+	else if(pattern == 3)
+	{
+		if(patternIndex2%2 == 0)
+		{
+			patternAmplitude = 1.0;
+		}
+		else
+		{
+			patternAmplitude = 0.0;
 		}
 	}
 }
@@ -129,37 +152,27 @@ SineOscillator::SineOscillator(int wavetableSize, float frequency, float amplitu
 
 Synthesizer::Synthesizer()	:AudioEffect()
 {
-	//344 hz square
-	/*
-	for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
-	{
-		buff[i] = 60000;
-	}
-	for(int i=AUDIO_BUFFERS_SIZE; i<AUDIO_BUFFERS_SIZE*2; i++)
-	{
-		buff[i] = 0;
-	}*/
+	controls[0] = new EffectControl();
+	controls[1] = new EffectControl();
+	controls[2] = new EffectControl();
+	controls[3] = new EffectControl();
 
-	/*for(int i=0; i<AUDIO_BUFFERS_SIZE*2; i++)
-	{
-		buff[i] = osc1.getSample(i);
-	}
-	for(int i=AUDIO_BUFFERS_SIZE*2; i<AUDIO_BUFFERS_SIZE*3; i++)
-	{
-		buff[i] = osc1.getSample(2*(i-AUDIO_BUFFERS_SIZE*2));
-	}*/
-	osc1 = new SineOscillator(256, 500, 0.25, OUT_BUFFER_CENTER);
-	osc2 = new SquareOscillator(256, 80, 0.25, OUT_BUFFER_CENTER);
-	osc3 = new SawOscillator(256, 80, 0.25, OUT_BUFFER_CENTER);
+
+	osc[0] = new SineOscillator(256, 500, 0.25, OUT_BUFFER_CENTER);
+	osc[1] = new SquareOscillator(256, 80, 0.25, OUT_BUFFER_CENTER);
+	osc[2] = new SawOscillator(256, 80, 0.25, OUT_BUFFER_CENTER);
+
+	for(int i=0; i<OSCILLATORS_COUNT; i++)
+		holdControl[i] = false;
 
 	srand((unsigned)time(0)); 
 }
 
 Synthesizer::~Synthesizer()
 {
-	delete osc1;
-	delete osc2;
-	delete osc3;
+	delete osc[0];
+	delete osc[1];
+	delete osc[2];
 }
 
 void Synthesizer::preWrite()
@@ -170,20 +183,14 @@ void Synthesizer::writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuff
 {
 	for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
 	{
-		wrBuff[i] = 0;
-		if(ctrlValues[0] > 500)
-			wrBuff[i] += osc1->nextSample()/3;
-		if(ctrlValues[1] > 500)
-			wrBuff[i] += osc2->nextSample()/3;
-		if(ctrlValues[2] > 500)
-			wrBuff[i] += osc3->nextSample()/3;
+		wrBuff[i] = osc[0]->nextSample()/3 + osc[1]->nextSample()/3 + osc[2]->nextSample()/3;
 	}
 }
 
 
 void Synthesizer::postWrite()
 {
-	lfo1Incr = ctrlValues[3]/10000.0 + 0.001;
+	/*lfo1Incr = ctrlValues[3]/10000.0 + 0.001;
 	if(lfo1Rising)
 	{
 		lfo1 += lfo1Incr;
@@ -201,14 +208,70 @@ void Synthesizer::postWrite()
 			lfo1 = 0;
 			lfo1Rising = true;
 		}
+	}*/
+
+	int activeParam = controls[3]->getIntValue(0, 3);
+
+	if(controls[3]->isChangedInt(1))
+	{
+		for(int i=0; i<OSCILLATORS_COUNT; i++)
+			holdControl[i] = true;
 	}
 
-	osc1->setFrequency(ctrlValues[0]/3);
-	osc2->setFrequency(ctrlValues[1]/3);
-	osc2->setAmplitude(lfo1);
-	osc3->setFrequency(ctrlValues[2]/3);
+	for(int i=0; i<OSCILLATORS_COUNT; i++)
+	{
+		if(activeParam==0)
+		{
+			float param = controls[i]->getFloatValue(0, 4000);
+			if(!holdControl[i])
+				osc[i]->setFrequency(param);	
+			else if(controls[i]->isPotMoved(60))
+				holdControl[i] = false;
+		}
+		else if(activeParam==1)
+		{
+			float param = controls[i]->getFloatValue(0, 0.3);
+			if(!holdControl[i])
+				osc[i]->setAmplitude(param);	
+			else if(controls[i]->isPotMoved(60))
+				holdControl[i] = false;
+		}
+		else if(activeParam==2)
+		{
+			
+			int param = controls[i]->getIntValue(0, 4);
+			if(!holdControl[i])
+				osc[i]->setPattern(param);
+			else if(controls[i]->isPotMoved(60))
+				holdControl[i] = false;
+		}
 
-	osc1->update();
-	osc2->update();
-	osc3->update();
+		osc[i]->update();
+	}
+
+	
+
+	/*if(!controlHold[0])
+	{
+
+	}*/
+	
+
+
+	/*else if(activeOsc == 1)
+	{
+		osc2->setFrequency(freq);
+		osc2->setAmplitude(ampl);
+		osc2->setPattern(pattern);
+	}
+	else if(activeOsc == 2)
+	{
+		osc3->setFrequency(freq);
+		osc3->setAmplitude(ampl);
+		osc3->setPattern(pattern);
+	}*/
+	/*osc2->setFrequency(controls[1].getValue());
+	osc2->setAmplitude(lfo1);
+	osc3->setFrequency(controls[2].getValue());*/
+
 }

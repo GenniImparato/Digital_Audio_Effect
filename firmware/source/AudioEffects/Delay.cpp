@@ -4,7 +4,7 @@
 
 Delay::Delay()
 {
-	for(int i=0; i<AUDIO_BUFFERS_SIZE*40; i++)
+	for(int i=0; i<DELAY_SAMPLES_COUNT; i++)
 		delayBuff[i] = 0;
 }
 
@@ -19,7 +19,7 @@ void Delay::writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer)
 		delayBuff[delayIndex] = delaySample;
 
 		delayIndex++;
-		if(delayIndex >= AUDIO_BUFFERS_SIZE*40)
+		if(delayIndex >= DELAY_SAMPLES_COUNT)
 			delayIndex=0;
 	}
 

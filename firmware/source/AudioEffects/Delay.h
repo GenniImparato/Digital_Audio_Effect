@@ -3,6 +3,7 @@
 
 #include "AudioEffect.h"
 
+#define DELAY_SAMPLES_COUNT	AUDIO_BUFFERS_SIZE*45		 	
 
 class Delay	:public AudioEffect
 {
@@ -16,13 +17,9 @@ class Delay	:public AudioEffect
 		void				postWrite();
 
 	private:
-		float				topThresh = 0.8;
-		float				botThresh = 0.2;
-		float				dist=0.1;
-
 		int					delayIndex = 0;
 
-		unsigned short		delayBuff[AUDIO_BUFFERS_SIZE*40];
+		unsigned short		delayBuff[DELAY_SAMPLES_COUNT];
 
 };
 

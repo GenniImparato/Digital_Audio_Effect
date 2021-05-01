@@ -2,27 +2,27 @@
 #define AUDIO_EFFECTS__H__
 
 #include <miosix.h>
+#include "EffectControl.h"
 #include "../config.h"
 #include "../utils.h"
 
 
 //base class for audio effect
-//runs on a its own thread
 class AudioEffect
 {
-	public:
-		AudioEffect();
-		//terminates threads
-		virtual ~AudioEffect();
+    public:
+        AudioEffect();
+        //terminates threads
+        virtual ~AudioEffect();
 
-		unsigned int 			ctrlValues[POTS_COUNT];
+        virtual void            preWrite(){};
+        virtual void            writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer);
+        virtual void            postWrite(){};
 
-		virtual void			preWrite(){};
-		virtual void			writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer);
-		virtual void			postWrite();
+        void                    setControlFromPot(unsigned int control, unsigned int value);
 
-
-	private:
+    protected:
+        EffectControl*          controls[POTS_COUNT];
 };
 
 

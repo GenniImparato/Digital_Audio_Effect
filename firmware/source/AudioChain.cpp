@@ -26,7 +26,7 @@ void AudioChain::init()
 	nextEffect();
 	//nextEffect();
 
-	//nextSource();
+	nextSource();
 }
 
 /*AudioChain::~AudioChain()
@@ -117,8 +117,11 @@ void AudioChain::writeDACLoop()
 	}
 	DAC_Driver::bufferFilled();
 
-	activeEffect->postWrite();
-	synth->postWrite();
+	{
+		Lock<Mutex> lock(ctrlMutex);
+		activeEffect->postWrite();
+		synth->postWrite();
+	}
 }
 
 
@@ -129,8 +132,8 @@ void AudioChain::potLoop()
 		for(int i=0; i<CONTROLS_COUNT; i++)
 		{
 			unsigned short val = ADC_Driver::singleConversionPot(i);
-			activeEffect->ctrlValues[i] = val;
-			synth->ctrlValues[i] = val;
+			//activeEffect->setControlFromPot(i, val);
+			synth->setControlFromPot(i, val);
 		}
 
 	}
