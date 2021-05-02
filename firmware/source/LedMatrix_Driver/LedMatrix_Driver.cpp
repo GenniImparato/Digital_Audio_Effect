@@ -1,52 +1,50 @@
 #include "LedMatrix_Driver.h"
 #include "Leds_Gpios.h" // For Gpio namespace
-#include "Leds_Chars.h" 
-// #include <cstdint>
+#include "Leds_Chars.h"
 #include <cstring> // To use memcpy
 #include <cctype> // To use toupper()
+#include <mutex>
 
 using namespace miosix;
 using namespace ledsGpio;
 
 miosix::Mutex 	LedMatrix_Driver::mutex;
 miosix::Thread*	LedMatrix_Driver::refreshThread;
-StringBufferQueue* LedMatrix_Driver::stringBuffer;
-
+LedString bufStr {}; //Buffer
 
 std::vector<GpioPin> ROWS;
 std::vector<GpioPin> COLS;
 
-
-void addMatrices(LedString result, LedString ledChar){
-	for (int i = 0; i < LED_MATRIX_ROWS; i++){
-		for (int j = 0; j < LED_MATRIX_COLUMNS; j++){
-			if (result[i][j] == 0)		
-				result[i][j] += ledChar[i][j];
-		}
+void checkHorizontalLayer(unsigned short &letterCount, bool &horizontalLayerCount, unsigned short &verticalLayerCount){
+	if(letterCount == LED_MAX_CHARS/2 && horizontalLayerCount <= LED_HORIZONTAL_LAYERS-1){
+		horizontalLayerCount++;
+		verticalLayerCount = 0;
 	}
+}
 
-} 
+void checkVerticalLayer(unsigned short &verticalLayerCount){
+	if (verticalLayerCount < LED_VERTICAL_LAYERS - 1)
+	{
+		verticalLayerCount++;
+	}
+}
 
 void LedMatrix_Driver::init()
 {
 	// Puts the GPIOs in 2 Vectors to facilitate their usage
 	fillVectors();
 
-	// Buffer creation
-	stringBuffer = new StringBufferQueue();
-
 	// Set OUTPUT mode on every led
-	for (int i = 0; i < LED_MATRIX_ROWS; i++)
-	{
-		ROWS[i].mode(Mode::OUTPUT);
-	}
-	for (int i = 0; i < LED_MATRIX_COLUMNS; i++)
-	{
-		COLS[i].mode(Mode::OUTPUT);
-	}
+	setGpiosMode();
 
-	// Turn OFF all leds to avoid a disaster
+	// Turn OFF all leds since setting their mode to OUTPUT turns them on
 	turnOffAllLeds();
+
+	// Writes a string into the buffer
+	// {
+	// std::unique_lock<miosix::Mutex> lock(LedMatrix_Driver::mutex);
+	// setString("provab");
+	// }
 
 	refreshThread = Thread::create(&LedMatrix_Driver::refreshThreadMain, STACK_MIN, 0);
 }
@@ -81,382 +79,191 @@ void LedMatrix_Driver::fillVectors(){
 	COLS.push_back(COL15::getPin());
 }
 
+void LedMatrix_Driver::setGpiosMode(){
+	// Set OUTPUT mode on every led
+	for (int i = 0; i < LED_MATRIX_ROWS; i++)
+	{
+		ROWS[i].mode(Mode::OUTPUT);
+	}
+	for (int i = 0; i < LED_MATRIX_COLUMNS; i++)
+	{
+		COLS[i].mode(Mode::OUTPUT);
+	}
+
+}
+
 void LedMatrix_Driver::turnOffAllLeds(){
 	rowsOff();
 	columnsOff();
 }
 
-void LedMatrix_Driver::rowsOff() {
-	for (unsigned int i = 0; i < ROWS.size(); i++)
-	{
+void LedMatrix_Driver::rowsOff(){
+	for (unsigned int i = 0; i < ROWS.size(); i++){
 		ROWS[i].high();
 	}
-	
 }
 
-void LedMatrix_Driver::columnsOff() {
-	for (unsigned int i = 0; i < COLS.size(); i++)
-	{
+void LedMatrix_Driver::columnsOff(){
+	for (unsigned int i = 0; i < COLS.size(); i++){
 		COLS[i].high();
-	}
-	
+	}	
 }
 
-void LedMatrix_Driver::setChar(LedString ledString ,LedChar ledChar, int ledMatrixLayer, int ledMatrixColumn){
+/* 	ledHorizontalLayer: can have values 0-1 
+		when 0, it targets rows 0-4
+		when 1, it targets rows 5-9
+	ledVerticalLayer: can have value 0-4
+		when 0, it targets columns 0-2
+		when 1, it targets columns 3-5
+		...
+		when 4, it targets columns 12-14
+*/
+void LedMatrix_Driver::setChar(LedString ledString ,LedChar ledChar, bool ledHorizontalLayer, unsigned short ledVerticalLayer){
 
-	for (int i = LED_SUBMATRIX_ROWS*ledMatrixLayer; i < LED_MATRIX_ROWS; i++){
-		for (int j = LED_SUBMATRIX_COLUMNS*ledMatrixColumn; j < LED_MATRIX_COLUMNS; j++){
-			if (ledString[i][j] == 0 && (i - LED_SUBMATRIX_ROWS*ledMatrixLayer) < LED_SUBMATRIX_ROWS && (j - LED_SUBMATRIX_COLUMNS*ledMatrixColumn) < LED_SUBMATRIX_COLUMNS)		
-				ledString[i][j] += ledChar[i - LED_SUBMATRIX_ROWS*ledMatrixLayer][j - LED_SUBMATRIX_COLUMNS*ledMatrixColumn];
+	for (int i = LED_SUBMATRIX_ROWS*ledHorizontalLayer; i < LED_MATRIX_ROWS; i++){
+		for (int j = LED_SUBMATRIX_COLUMNS*ledVerticalLayer; j < LED_MATRIX_COLUMNS; j++){
+			if (ledString[i][j] == 0 && (i - LED_SUBMATRIX_ROWS*ledHorizontalLayer) < LED_SUBMATRIX_ROWS && (j - LED_SUBMATRIX_COLUMNS*ledVerticalLayer) < LED_SUBMATRIX_COLUMNS)		
+				ledString[i][j] += ledChar[i - LED_SUBMATRIX_ROWS*ledHorizontalLayer][j - LED_SUBMATRIX_COLUMNS*ledVerticalLayer];
 		}
 	}
 }
 
-//TODO: porre vincoli su lunghezza stringa
-//TODO: migliorare il codice
-void LedMatrix_Driver::setString(LedString *bufStr , std::string str){
+void LedMatrix_Driver::setString(std::string str){
 
-	unsigned int layerCount = 0;
-	unsigned int columnCount = 0;
-	unsigned int letterCount = 0;
+	unsigned short letterCount = 0;
+	bool horizontalLayerCount = 0;
+	unsigned short verticalLayerCount = 0;
+
+
+	if (str.length() > LED_MAX_CHARS){
+		setString("Too  Long");
+		return;
+	}
 
 	for (unsigned int i = 0; i < str.length(); i++){
-
-		if (toupper(str[i]) == 'A'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], A, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+		checkHorizontalLayer(letterCount, horizontalLayerCount, verticalLayerCount);
+		switch (toupper(str[i])){
+		case 'A':
+			setChar(bufStr, A, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'B'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], B, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'B':
+			setChar(bufStr, B, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'C'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], C, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'C':
+			setChar(bufStr, C, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'D'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], D, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'D':
+			setChar(bufStr, D, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'E'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], E, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'E':
+			setChar(bufStr, E, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'F'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], F, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'F':
+			setChar(bufStr, F, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'G'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], G, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'G':
+			setChar(bufStr, G, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'H'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], H, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'H':
+			setChar(bufStr, H, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'I'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], I, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'I':
+			setChar(bufStr, I, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'J'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], J, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'J':
+			setChar(bufStr, J, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'K'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], K, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'K':
+			setChar(bufStr, K, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'L'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], L, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'L':
+			setChar(bufStr, L, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'M'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], M, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'M':
+			setChar(bufStr, M, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'N'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], N, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'N':
+			setChar(bufStr, N, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'O'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], O, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'O':
+			setChar(bufStr, O, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'P'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], P, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'P':
+			setChar(bufStr, P, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'Q'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], Q, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'Q':
+			setChar(bufStr, Q, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'R'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], R, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'R':
+			setChar(bufStr, R, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'S'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], S, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'S':
+			setChar(bufStr, S, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'T'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], T, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'T':
+			setChar(bufStr, T, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'U'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], U, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'U':
+			setChar(bufStr, U, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'V'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], V, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'V':
+			setChar(bufStr, V, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'W'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], W, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'W':
+			setChar(bufStr, W, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'X'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], X, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'X':
+			setChar(bufStr, X, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'Y'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], Y, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'Y':
+			setChar(bufStr, Y, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == 'Z'){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], Z, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		case 'Z':
+			setChar(bufStr, Z, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
-		if (toupper(str[i]) == ' '){
-			if(letterCount == 5 && layerCount <= 1){
-				layerCount++;
-				columnCount = 0;
-			}
-			setChar(bufStr[0], SPACE, layerCount, columnCount);
-			if (columnCount < 4)
-			{
-				columnCount++;
-			}
+			break;
+		default:
+			setChar(bufStr, SPACE, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
-		}
+			break;
+		}	
+		checkVerticalLayer(verticalLayerCount);
 	}
 }
 
-void LedMatrix_Driver::writeLeds(LedString ledChar){ 
+void LedMatrix_Driver::writeLeds(LedString ledStr){ 
 	for (int i = 0; i < LED_MATRIX_ROWS; i++){
 		ROWS[i].low();
 		for (int j = 0; j < LED_MATRIX_COLUMNS; j++){
-			if (ledChar[i][j] == true){
+			if (ledStr[i][j] == true){
 				COLS[j].low();
 			}
-			if (ledChar[i][j] == false){
+			if (ledStr[i][j] == false){
 				COLS[j].high();
 			}
 		}
@@ -466,27 +273,22 @@ void LedMatrix_Driver::writeLeds(LedString ledChar){
 	}
 }
 
+void LedMatrix_Driver::emptyBuffer(){
+	for (unsigned int i = 0; i < LED_MATRIX_ROWS; i++){
+		for (unsigned int j = 0; j < LED_MATRIX_COLUMNS; j++){
+			bufStr[i][j] = 0;
+		}
+	}
+}
+
 void LedMatrix_Driver::refreshThreadMain(void *param){
 	while(true)
 	{
 		//refresh next row
-
-		/* 	ledMatrixLayer: can have values 0-1 
-				when 0, it targets rows 0-4
-				when 1, it targets rows 5-9
-			ledMatrixColumn: can have value 0-4
-				when 0, it targets columns 0-2
-				when 1, it targets columns 3-5
-				...
-				when 4, it targets columns 12-14
-		*/
-		LedString *bufStr {};
-		stringBuffer->tryGetWritableBuffer(bufStr);
-		LedString zeroMatrix {0};
-		std::memcpy(bufStr[0], zeroMatrix, sizeof(LedString));
-
-		setString(bufStr, "bellagenni");
-		writeLeds(bufStr[0]);
+		{
+		std::unique_lock<miosix::Mutex> lock(LedMatrix_Driver::mutex);
+		writeLeds(bufStr);
+		}
 
 	}
 }

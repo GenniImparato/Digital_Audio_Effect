@@ -7,7 +7,7 @@
 
 // TODO: Maybe I can speed up the GPIOs using ::speed (see gpio_impl.h)
 
-#define LED_MATRIX_REFRESH_PERIOD	2	//ms
+#define LED_MATRIX_REFRESH_PERIOD	1	//ms
 
 #define LED_MATRIX_ROWS				10
 #define LED_MATRIX_COLUMNS			15
@@ -15,7 +15,9 @@
 #define LED_SUBMATRIX_ROWS			5
 #define LED_SUBMATRIX_COLUMNS		3
 
-#define LED_CHARS					10
+#define LED_MAX_CHARS				10
+#define LED_HORIZONTAL_LAYERS		2
+#define LED_VERTICAL_LAYERS 		5
 
 typedef bool LedChar [LED_SUBMATRIX_ROWS][LED_SUBMATRIX_COLUMNS];	
 typedef bool LedString [LED_MATRIX_ROWS][LED_MATRIX_COLUMNS];
@@ -32,19 +34,21 @@ class LedMatrix_Driver
 
 		static miosix::Mutex 	mutex;
 		static miosix::Thread*	refreshThread;
-		static StringBufferQueue*	stringBuffer;
+		// LedString *bufStr {};
 
 	public:
 		//initialize
 		static void 			init();
 		static void				fillVectors(); //Gpios are handled easier using them in Vectors
+		static void				setGpiosMode(); //mode OUTPUT
 		static void				turnOffAllLeds();
 		static void				rowsOff();
 		static void 			columnsOff();
 
 		//thread safe writer methods
-		static void				setChar(LedString ledString, LedChar LedChar, int ledMatrixLayer, int ledMatrixColumn);
-		static void				setString(LedString *bufStr, std::string str);
-		static void				writeLeds(LedString ledChar);
+		static void				setChar(LedString ledString, LedChar LedChar, bool ledHorizontalLayer, unsigned short ledVerticalLayer);
+		static void				setString(std::string str);
+		static void				writeLeds(LedString ledStr);
+		static void				emptyBuffer();
 };
 #endif
