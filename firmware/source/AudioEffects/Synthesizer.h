@@ -14,11 +14,10 @@
 class Oscillator
 {
     public:
-        Oscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.5, int center=OUT_BUFFER_CENTER);
+        Oscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.25);
         virtual ~Oscillator();
 
-        int             nextSample();
-        float           nextSampleF();
+        float           nextSample();
         void            setFrequency(float freq);
         void            setAmplitude(float ampl);
         void            setCenter(int center);
@@ -36,34 +35,34 @@ class Oscillator
         float           patternFrequency = 0;
         int             center;
         int             phase;
-        int             pattern = 0;
+        int             pattern = 3;
         int             patternIndex1 = 0;
         int             patternIndex2 = 0;
         bool            patternIndex2Updated = false;
-        int             patternSpeed = 10;
+        int             patternSpeed = 45;
 
     protected:
         int             wavetableSize;
-        int*            wavetable;
+        float*         wavetable;
 
 };
 
 class SawOscillator : public Oscillator
 {
     public:
-        SawOscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.5, int center=OUT_BUFFER_CENTER);
+        SawOscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.25);
 };
 
 class SquareOscillator : public Oscillator
 {
     public:
-        SquareOscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.5, int center=OUT_BUFFER_CENTER);
+        SquareOscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.25);
 };
 
 class SineOscillator : public Oscillator
 {
     public:
-        SineOscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.5, int center=OUT_BUFFER_CENTER);
+        SineOscillator(int wavetableSize=AUDIO_BUFFERS_SIZE, float frequency=440, float amplitude=0.5);
 };
 
 
@@ -74,7 +73,7 @@ class Synthesizer   :public AudioEffect
         ~Synthesizer();
 
         //overriden methods
-        void                writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer);
+        void                writeNextBuffer(float* inBuff, float* outBuff);
         void                postWrite();
 
     private:

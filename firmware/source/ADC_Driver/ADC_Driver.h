@@ -5,7 +5,9 @@
 #include "../config.h"
 #include "miosix/kernel/scheduler/scheduler.h"
 
-#define POTS_COUNT				4
+
+#define ADC_MIN					0
+#define ADC_MAX					4095
 
 //static class to manage ADC
 class ADC_Driver

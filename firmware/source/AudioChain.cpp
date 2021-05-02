@@ -4,7 +4,7 @@
 
 using namespace miosix;
 
-unsigned short          AudioChain::adcBuff[AUDIO_BUFFERS_SIZE];
+float                   AudioChain::adcBuff[AUDIO_BUFFERS_SIZE];
 
 Mutex                   AudioChain::ctrlMutex;
 Mutex                   AudioChain::buffMutex;
@@ -16,7 +16,7 @@ Thread*                 AudioChain::writeDACThread = nullptr;
 AudioEffect*            AudioChain::activeEffect = nullptr;
 int                     AudioChain::activeSource = 0;
 AudioEffect*            AudioChain::synth = nullptr;
-bool                    AudioChain::controlSynth = true;
+bool                    AudioChain::controlSynth = false;
 
 void AudioChain::init()
 {
@@ -89,9 +89,7 @@ void AudioChain::readADCLoop()
 
     {   
         Lock<Mutex> dLock(buffMutex);
-        for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
-            adcBuff[i] = map(inBuff[i], 1, 4096, 1, 63000);
-
+        convertAudioBuffer_AdcToDsp(inBuff, adcBuff);
     }
     //printf("Buffer[%d] = %d\n", count, tmpBuff[100]);
 
@@ -100,26 +98,51 @@ void AudioChain::readADCLoop()
 
 void AudioChain::writeDACLoop()
 {
-    //suspend thread and waits if no buff
-    unsigned short* outBuff = DAC_Driver::getWritableBuffer(writeDACThread);
+    static float tmpBuff[AUDIO_BUFFERS_SIZE];
+
+    /*for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
+        tmpBuff[i] = 2.0*i/AUDIO_BUFFERS_SIZE -1.0 ;*/
 
     if(activeSource == ADC_SOURCE)
     {
         Lock<Mutex> dLock(buffMutex);
-        activeEffect->writeNextBuffer(outBuff, adcBuff);    
+        activeEffect->writeNextBuffer(adcBuff, tmpBuff);    
     }
     else if(activeSource == SYNTH_SOURCE)
     {
-        static unsigned short tmpBuff[AUDIO_BUFFERS_SIZE];
-        synth->writeNextBuffer(tmpBuff, nullptr);
-        activeEffect->writeNextBuffer(outBuff, tmpBuff);
+        synth->writeNextBuffer(nullptr, tmpBuff);
+        activeEffect->writeNextBuffer(tmpBuff, tmpBuff);
     }
+
+    //suspend thread and waits if no buff
+    unsigned short* outBuff = DAC_Driver::getWritableBuffer(writeDACThread);
+    convertAudioBuffer_DspToDac(tmpBuff, outBuff);
     DAC_Driver::bufferFilled();
 
     {
         Lock<Mutex> lock(ctrlMutex);
         activeEffect->postWrite();
         synth->postWrite();
+    }
+}
+
+void AudioChain::convertAudioBuffer_AdcToDsp(const unsigned short* inBuff, float* outBuff)
+{
+    /*for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
+        outBuff[i] = map_d(inBuff[i], (double)(ADC_MIN), (double)(ADC_MAX), -1.0, 1.0);*/
+}
+
+void AudioChain::convertAudioBuffer_DspToDac(float* inBuff, unsigned short* outBuff)
+{
+    for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
+    {
+        if(inBuff[i] > 1.0)
+            outBuff[i] = 60000;
+        if(inBuff[i] < -1.0)
+            outBuff[i] = 0;
+        else
+        //outBuff[i] = (unsigned short)(map_d(inBuff[i], -1.0, 1.0, 20000, 40000));
+        outBuff[i] = (unsigned short)(0.5*(inBuff[i]+1.0)*50000.0);
     }
 }
 

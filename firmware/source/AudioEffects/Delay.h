@@ -3,7 +3,7 @@
 
 #include "AudioEffect.h"
 
-#define DELAY_SAMPLES_COUNT	AUDIO_BUFFERS_SIZE*45		 	
+#define DELAY_SAMPLES_COUNT	AUDIO_BUFFERS_SIZE*20		 	
 
 class Delay	:public AudioEffect
 {
@@ -12,13 +12,16 @@ class Delay	:public AudioEffect
 		~Delay(){};
 
 		//overriden methods
-		void				writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer);
+		void				writeNextBuffer(float* inBuff, float* outBuff);
 		void				postWrite();
 
 	private:
-		int					delayIndex = 0;
+		int					delayIndex 	= 0;
+		float				time		= 0.5;
+		float				feedback    = 0.45;
+		float 				wet 		= 1.0;
 
-		unsigned short		delayBuff[DELAY_SAMPLES_COUNT];
+		float				delayBuff[DELAY_SAMPLES_COUNT];
 
 };
 

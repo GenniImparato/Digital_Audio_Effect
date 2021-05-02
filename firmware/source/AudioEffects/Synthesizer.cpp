@@ -4,17 +4,16 @@
 #include <cstdlib> 
 #include <ctime> 
 
-Oscillator::Oscillator(int wavetableSize, float frequency, float amplitude, int center)
+Oscillator::Oscillator(int wavetableSize, float frequency, float amplitude)
 {
     this->wavetableSize = wavetableSize;
     this->currIndex = 0;
     this->phase = 0;
     this->duration = wavetableSize/AUDIO_SAMPLING_FREQUENCY;
-    this->wavetable = new int[wavetableSize];
+    this->wavetable = new float[wavetableSize];
 
     setFrequency(frequency);
     setAmplitude(amplitude);
-    setCenter(center);
 
     for(int i=0; i<wavetableSize; i++)
     {
@@ -57,18 +56,18 @@ void Oscillator::setPatternSpeed(int speed)
     this->patternSpeed = PATTERN_MAX_SPEED - speed;
 }
 
-int Oscillator::nextSample()
+float Oscillator::nextSample()
 {
     if(frequency < 40)
         return 0;
 
-    float ret = amplitude*patternAmplitude*(float)(wavetable[(int)(currIndex)]);
+    float ret = amplitude*patternAmplitude*(wavetable[static_cast<int>(currIndex)]);
 
     currIndex += patternFrequency*frequency*duration;
     if(currIndex >= wavetableSize)
         currIndex = 0;
 
-    return (int)ret;
+    return ret;
 }
 
 void Oscillator::update()
@@ -140,59 +139,43 @@ void Oscillator::update()
     patternIndex2Updated=false;
 }
 
-float Oscillator::nextSampleF()
-{
-    float ret = amplitude*wavetable[(int)(currIndex)]/(float)wavetableSize + center;
-    currIndex += patternFrequency*duration;
-    if(currIndex >= wavetableSize)
-        currIndex = 0;
-
-    return ret;
-}
-
-SawOscillator::SawOscillator(int wavetableSize, float frequency, float amplitude, int center) 
-    :Oscillator(wavetableSize, frequency, amplitude, center)
+SawOscillator::SawOscillator(int wavetableSize, float frequency, float amplitude) 
+    :Oscillator(wavetableSize, frequency, amplitude)
 {
     for(int i=0; i<wavetableSize; i++)
     {
-        wavetable[i] = center + i*60000/wavetableSize - 30000;
+        wavetable[i] = 2.0*i/wavetableSize - 1.0;
     }
 }
 
-SquareOscillator::SquareOscillator(int wavetableSize, float frequency, float amplitude, int center) 
-    :Oscillator(wavetableSize, frequency, amplitude, center)
+SquareOscillator::SquareOscillator(int wavetableSize, float frequency, float amplitude) 
+    :Oscillator(wavetableSize, frequency, amplitude)
 {
     for(int i=0; i<wavetableSize/2; i++)
     {
-        wavetable[i] = center + 30000;
+        wavetable[i] = 1;
     }
     for(int i=wavetableSize/2; i<wavetableSize; i++)
     {
-        wavetable[i] = center -30000;
+        wavetable[i] = -1;
     }
 }
 
-SineOscillator::SineOscillator(int wavetableSize, float frequency, float amplitude, int center) 
-    :Oscillator(wavetableSize, frequency, amplitude, center)
+SineOscillator::SineOscillator(int wavetableSize, float frequency, float amplitude) 
+    :Oscillator(wavetableSize, frequency, amplitude)
 {
     for(int i=0; i<wavetableSize; i++)
     {
-        wavetable[i] = center + 30000*sin(2*PI*i/wavetableSize);
+        wavetable[i] = sin(2.0*PI*i/wavetableSize);
     }
 }
 
 
 Synthesizer::Synthesizer()  :AudioEffect()
 {
-    controls[0] = new EffectControl();
-    controls[1] = new EffectControl();
-    controls[2] = new EffectControl();
-    controls[3] = new EffectControl();
-
-
-    osc[0] = new SineOscillator(256, 500, 0.25, OUT_BUFFER_CENTER);
-    osc[1] = new SquareOscillator(256, 80, 0.25, OUT_BUFFER_CENTER);
-    osc[2] = new SawOscillator(256, 80, 0.25, OUT_BUFFER_CENTER);
+    osc[0] = new SineOscillator(512, 500, 0.25);
+    osc[1] = new SquareOscillator(512, 80, 0.25);
+    osc[2] = new SawOscillator(512, 80, 0.25);
 
     for(int i=0; i<OSCILLATORS_COUNT; i++)
         holdControl[i] = false;
@@ -208,20 +191,22 @@ Synthesizer::~Synthesizer()
 }
 
 
-void Synthesizer::writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer=nullptr)
+//inBuff not used, can be nullpntr
+void Synthesizer::writeNextBuffer(float* inBuff, float* outBuff)
 {
     for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
     {
-        wrBuff[i] = osc[0]->nextSample()/3 + osc[1]->nextSample()/3 + osc[2]->nextSample()/3;
+        //outBuff[i] = osc[0]->nextSample()/3 + osc[1]->nextSample()/3 + osc[2]->nextSample()/3;
+        outBuff[i] = osc[0]->nextSample()*0.3 + osc[1]->nextSample()*0.3 + osc[2]->nextSample()*0.3;
     }
 }
 
 
 void Synthesizer::postWrite()
 {
-    int activeParam = controls[3]->getIntValue(0, 4);
+    int activeParam = controls[3].getIntValue(0, 4);
 
-    if(controls[3]->isChangedInt(1))
+    if(controls[3].isChangedInt(1))
     {
         for(int i=0; i<OSCILLATORS_COUNT; i++)
             holdControl[i] = true;
@@ -232,15 +217,15 @@ void Synthesizer::postWrite()
         if(!holdControl[i])
         {
             if(activeParam==0)
-                osc[i]->setFrequency(controls[i]->getFloatValue(0, 4000));  
+                osc[i]->setFrequency(controls[i].getFloatValue(0, 4000));  
             else if(activeParam==1)
-                osc[i]->setAmplitude(controls[i]->getFloatValue(0, 0.3));   
+                osc[i]->setAmplitude(controls[i].getFloatValue(0, 0.3));   
             else if(activeParam==2)
-                osc[i]->setPattern(controls[i]->getIntValue(0, 4));
+                osc[i]->setPattern(controls[i].getIntValue(0, 4));
             else if(activeParam==3)
-                osc[i]->setPatternSpeed(controls[i]->getIntValue(0, PATTERN_MAX_SPEED-5));
+                osc[i]->setPatternSpeed(controls[i].getIntValue(0, PATTERN_MAX_SPEED-5));
         }
-        else if(controls[i]->isPotMoved(60))
+        else if(controls[i].isPotMoved(60))
             holdControl[i] = false;
 
         osc[i]->update();

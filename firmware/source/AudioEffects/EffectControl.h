@@ -58,7 +58,7 @@ class EffectControl
           }
 
      protected:
-          unsigned short      potValue;
+          unsigned short      potValue = 2000;
           unsigned short      lastPotVal=0;
           float               fVal=0;
           float               fLastVal=0;

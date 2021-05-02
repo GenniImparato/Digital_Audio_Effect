@@ -33,7 +33,7 @@ class AudioChain
         AudioChain();
 
         //buffer shared by reader/writer, syncronized with buffMutex
-        static  unsigned short          adcBuff[AUDIO_BUFFERS_SIZE];
+        static  float                   adcBuff[AUDIO_BUFFERS_SIZE];
 
         static  miosix::Mutex           ctrlMutex;
         static  miosix::Mutex           buffMutex;
@@ -55,11 +55,13 @@ class AudioChain
         static  void                    writeDACLoop();
         static  void                    potLoop();
 
+        static  void                    convertAudioBuffer_AdcToDsp(const unsigned short* inBuff, float* outBuff);
+        static  void                    convertAudioBuffer_DspToDac(float* inBuff, unsigned short* outBuff);
+
         //threads entry points, param is a pointer to AudioEffect
         static  void                    readADCThreadMain(void *param);
         static  void                    writeDACThreadMain(void *param);
         static  void                    potThreadMain(void *param);
 };
-
 
 #endif

@@ -15,13 +15,13 @@ class AudioEffect
         //terminates threads
         virtual ~AudioEffect();
 
-        virtual void            writeNextBuffer(unsigned short* wrBuff, unsigned short* rdBuffer);
+        virtual void            writeNextBuffer(float* inBuff, float* outBuff);
         virtual void            postWrite(){};
 
         void                    setControlFromPot(unsigned int control, unsigned int value);
 
     protected:
-        EffectControl*          controls[POTS_COUNT];
+        EffectControl           controls[POTS_COUNT];
 };
 
 
