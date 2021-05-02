@@ -15,7 +15,7 @@ LedString bufStr {}; //Buffer
 std::vector<GpioPin> ROWS;
 std::vector<GpioPin> COLS;
 
-void checkHorizontalLayer(unsigned short &letterCount, bool &horizontalLayerCount, unsigned short &verticalLayerCount){
+void checkHorizontalLayer(unsigned short &letterCount, unsigned short &horizontalLayerCount, unsigned short &verticalLayerCount){
 	if(letterCount == LED_MAX_CHARS/2 && horizontalLayerCount <= LED_HORIZONTAL_LAYERS-1){
 		horizontalLayerCount++;
 		verticalLayerCount = 0;
@@ -118,12 +118,12 @@ void LedMatrix_Driver::columnsOff(){
 		...
 		when 4, it targets columns 12-14
 */
-void LedMatrix_Driver::setChar(LedString ledString ,LedChar ledChar, bool ledHorizontalLayer, unsigned short ledVerticalLayer){
+void LedMatrix_Driver::setChar(LedChar ledChar, unsigned short ledHorizontalLayer, unsigned short ledVerticalLayer){
 
 	for (int i = LED_SUBMATRIX_ROWS*ledHorizontalLayer; i < LED_MATRIX_ROWS; i++){
 		for (int j = LED_SUBMATRIX_COLUMNS*ledVerticalLayer; j < LED_MATRIX_COLUMNS; j++){
-			if (ledString[i][j] == 0 && (i - LED_SUBMATRIX_ROWS*ledHorizontalLayer) < LED_SUBMATRIX_ROWS && (j - LED_SUBMATRIX_COLUMNS*ledVerticalLayer) < LED_SUBMATRIX_COLUMNS)		
-				ledString[i][j] += ledChar[i - LED_SUBMATRIX_ROWS*ledHorizontalLayer][j - LED_SUBMATRIX_COLUMNS*ledVerticalLayer];
+			if (bufStr[i][j] == 0 && (i - LED_SUBMATRIX_ROWS*ledHorizontalLayer) < LED_SUBMATRIX_ROWS && (j - LED_SUBMATRIX_COLUMNS*ledVerticalLayer) < LED_SUBMATRIX_COLUMNS)		
+				bufStr[i][j] += ledChar[i - LED_SUBMATRIX_ROWS*ledHorizontalLayer][j - LED_SUBMATRIX_COLUMNS*ledVerticalLayer];
 		}
 	}
 }
@@ -131,7 +131,7 @@ void LedMatrix_Driver::setChar(LedString ledString ,LedChar ledChar, bool ledHor
 void LedMatrix_Driver::setString(std::string str){
 
 	unsigned short letterCount = 0;
-	bool horizontalLayerCount = 0;
+	unsigned short horizontalLayerCount = 0;
 	unsigned short verticalLayerCount = 0;
 
 
@@ -144,111 +144,151 @@ void LedMatrix_Driver::setString(std::string str){
 		checkHorizontalLayer(letterCount, horizontalLayerCount, verticalLayerCount);
 		switch (toupper(str[i])){
 		case 'A':
-			setChar(bufStr, A, horizontalLayerCount, verticalLayerCount);
+			setChar(A, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'B':
-			setChar(bufStr, B, horizontalLayerCount, verticalLayerCount);
+			setChar(B, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'C':
-			setChar(bufStr, C, horizontalLayerCount, verticalLayerCount);
+			setChar(C, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'D':
-			setChar(bufStr, D, horizontalLayerCount, verticalLayerCount);
+			setChar(D, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'E':
-			setChar(bufStr, E, horizontalLayerCount, verticalLayerCount);
+			setChar(E, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'F':
-			setChar(bufStr, F, horizontalLayerCount, verticalLayerCount);
+			setChar(F, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'G':
-			setChar(bufStr, G, horizontalLayerCount, verticalLayerCount);
+			setChar(G, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'H':
-			setChar(bufStr, H, horizontalLayerCount, verticalLayerCount);
+			setChar(H, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'I':
-			setChar(bufStr, I, horizontalLayerCount, verticalLayerCount);
+			setChar(I, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'J':
-			setChar(bufStr, J, horizontalLayerCount, verticalLayerCount);
+			setChar(J, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'K':
-			setChar(bufStr, K, horizontalLayerCount, verticalLayerCount);
+			setChar(K, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'L':
-			setChar(bufStr, L, horizontalLayerCount, verticalLayerCount);
+			setChar(L, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'M':
-			setChar(bufStr, M, horizontalLayerCount, verticalLayerCount);
+			setChar(M, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'N':
-			setChar(bufStr, N, horizontalLayerCount, verticalLayerCount);
+			setChar(N, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'O':
-			setChar(bufStr, O, horizontalLayerCount, verticalLayerCount);
+			setChar(O, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'P':
-			setChar(bufStr, P, horizontalLayerCount, verticalLayerCount);
+			setChar(P, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'Q':
-			setChar(bufStr, Q, horizontalLayerCount, verticalLayerCount);
+			setChar(Q, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'R':
-			setChar(bufStr, R, horizontalLayerCount, verticalLayerCount);
+			setChar(R, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'S':
-			setChar(bufStr, S, horizontalLayerCount, verticalLayerCount);
+			setChar(S, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'T':
-			setChar(bufStr, T, horizontalLayerCount, verticalLayerCount);
+			setChar(T, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'U':
-			setChar(bufStr, U, horizontalLayerCount, verticalLayerCount);
+			setChar(U, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'V':
-			setChar(bufStr, V, horizontalLayerCount, verticalLayerCount);
+			setChar(V, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'W':
-			setChar(bufStr, W, horizontalLayerCount, verticalLayerCount);
+			setChar(W, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'X':
-			setChar(bufStr, X, horizontalLayerCount, verticalLayerCount);
+			setChar(X, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'Y':
-			setChar(bufStr, Y, horizontalLayerCount, verticalLayerCount);
+			setChar(Y, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		case 'Z':
-			setChar(bufStr, Z, horizontalLayerCount, verticalLayerCount);
+			setChar(Z, horizontalLayerCount, verticalLayerCount);
+			letterCount++;
+			break;
+		case '0':
+			setChar(ZERO, horizontalLayerCount, verticalLayerCount);
+			letterCount++;
+			break;
+		case '1':
+			setChar(ONE, horizontalLayerCount, verticalLayerCount);
+			letterCount++;
+			break;
+		case '2':
+			setChar(TWO, horizontalLayerCount, verticalLayerCount);
+			letterCount++;
+			break;
+		case '3':
+			setChar(THREE, horizontalLayerCount, verticalLayerCount);
+			letterCount++;
+			break;
+		case '4':
+			setChar(FOUR, horizontalLayerCount, verticalLayerCount);
+			letterCount++;
+			break;
+		case '5':
+			setChar(FIVE, horizontalLayerCount, verticalLayerCount);
+			letterCount++;
+			break;
+		case '6':
+			setChar(SIX, horizontalLayerCount, verticalLayerCount);
+			letterCount++;
+			break;
+		case '7':
+			setChar(SEVEN, horizontalLayerCount, verticalLayerCount);
+			letterCount++;
+			break;
+		case '8':
+			setChar(EIGHT, horizontalLayerCount, verticalLayerCount);
+			letterCount++;
+			break;
+		case '9':
+			setChar(NINE, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		default:
-			setChar(bufStr, SPACE, horizontalLayerCount, verticalLayerCount);
+			setChar(SPACE, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
 		}	
@@ -256,14 +296,14 @@ void LedMatrix_Driver::setString(std::string str){
 	}
 }
 
-void LedMatrix_Driver::writeLeds(LedString ledStr){ 
+void LedMatrix_Driver::writeLeds(){ 
 	for (int i = 0; i < LED_MATRIX_ROWS; i++){
 		ROWS[i].low();
 		for (int j = 0; j < LED_MATRIX_COLUMNS; j++){
-			if (ledStr[i][j] == true){
+			if (bufStr[i][j] == true){
 				COLS[j].low();
 			}
-			if (ledStr[i][j] == false){
+			if (bufStr[i][j] == false){
 				COLS[j].high();
 			}
 		}
@@ -285,9 +325,10 @@ void LedMatrix_Driver::refreshThreadMain(void *param){
 	while(true)
 	{
 		//refresh next row
+		// TODO: add condition variable to notify readers
 		{
 		std::unique_lock<miosix::Mutex> lock(LedMatrix_Driver::mutex);
-		writeLeds(bufStr);
+		writeLeds();
 		}
 
 	}

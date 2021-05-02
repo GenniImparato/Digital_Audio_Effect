@@ -46,9 +46,9 @@ class LedMatrix_Driver
 		static void 			columnsOff();
 
 		//thread safe writer methods
-		static void				setChar(LedString ledString, LedChar LedChar, bool ledHorizontalLayer, unsigned short ledVerticalLayer);
+		static void				setChar(LedChar ledChar, unsigned short ledHorizontalLayer, unsigned short ledVerticalLayer);
 		static void				setString(std::string str);
-		static void				writeLeds(LedString ledStr);
+		static void				writeLeds();
 		static void				emptyBuffer();
 };
 #endif

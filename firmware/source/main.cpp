@@ -64,5 +64,11 @@ int main()
 			LedMatrix_Driver::setString("va");
 		}
 		Thread::sleep(1000);
+		{
+			std::unique_lock<miosix::Mutex> lock(mutex);
+			LedMatrix_Driver::emptyBuffer();
+			LedMatrix_Driver::setString("0123456789");
+		}
+		Thread::sleep(1000);
     }
 }
