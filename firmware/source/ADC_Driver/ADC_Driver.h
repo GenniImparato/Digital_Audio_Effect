@@ -4,10 +4,9 @@
 #include <miosix.h>
 #include "../config.h"
 #include "miosix/kernel/scheduler/scheduler.h"
+#include "Filter.h"
 
-
-#define ADC_MIN					0
-#define ADC_MAX					4095
+#define	FILTER_SAMLPLES_COUNT		20
 
 //static class to manage ADC
 class ADC_Driver
@@ -35,8 +34,11 @@ class ADC_Driver
 		//performs a single conversion (uses ADC1)
 		static unsigned int 			singleConversion(unsigned short channel);
 
+		//performs many conversions and filter (uses ADC1)
+		static unsigned int 			filterConversions(unsigned short channel);
+
 		//performs a single conversion given pot id (uses ADC1)
-		static unsigned int 			singleConversionPot(unsigned short pot);
+		static unsigned int 			filterConversionsPot(unsigned short pot);
 
 		//suspends readerThread until a buffer is available for reading (uses ADC2)
 		static const unsigned short * 	getReadableBuffer(miosix::Thread* readerThread);

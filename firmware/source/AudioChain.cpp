@@ -158,7 +158,7 @@ void AudioChain::potLoop()
         Lock<Mutex> lock(ctrlMutex);
         for(int i=0; i<CONTROLS_COUNT; i++)
         {
-            unsigned short val = ADC_Driver::singleConversionPot(i);
+            unsigned short val = ADC_Driver::filterConversionsPot(i);
 
             AudioEffect *controlEffect;
 

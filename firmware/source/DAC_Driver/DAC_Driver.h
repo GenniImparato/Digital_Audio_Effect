@@ -7,8 +7,6 @@
 #include "util/software_i2c.h"
 
 
-#define DAC_MIN				0
-#define DAC_MAX				65535
 
 //static class to manage DAC
 class DAC_Driver
