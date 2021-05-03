@@ -6,11 +6,12 @@
 #include <mutex>
 
 using namespace miosix;
-using namespace ledsGpio;
 
 miosix::Mutex 	LedMatrix_Driver::mutex;
+miosix::ConditionVariable LedMatrix_Driver::cv;
 miosix::Thread*	LedMatrix_Driver::refreshThread;
 LedString bufStr {}; //Buffer
+bool isSetting = false;
 
 std::vector<GpioPin> ROWS;
 std::vector<GpioPin> COLS;
@@ -39,12 +40,6 @@ void LedMatrix_Driver::init()
 
 	// Turn OFF all leds since setting their mode to OUTPUT turns them on
 	turnOffAllLeds();
-
-	// Writes a string into the buffer
-	// {
-	// std::unique_lock<miosix::Mutex> lock(LedMatrix_Driver::mutex);
-	// setString("provab");
-	// }
 
 	refreshThread = Thread::create(&LedMatrix_Driver::refreshThreadMain, STACK_MIN, 0);
 }
@@ -119,7 +114,6 @@ void LedMatrix_Driver::columnsOff(){
 		when 4, it targets columns 12-14
 */
 void LedMatrix_Driver::setChar(LedChar ledChar, unsigned short ledHorizontalLayer, unsigned short ledVerticalLayer){
-
 	for (int i = LED_SUBMATRIX_ROWS*ledHorizontalLayer; i < LED_MATRIX_ROWS; i++){
 		for (int j = LED_SUBMATRIX_COLUMNS*ledVerticalLayer; j < LED_MATRIX_COLUMNS; j++){
 			if (bufStr[i][j] == 0 && (i - LED_SUBMATRIX_ROWS*ledHorizontalLayer) < LED_SUBMATRIX_ROWS && (j - LED_SUBMATRIX_COLUMNS*ledVerticalLayer) < LED_SUBMATRIX_COLUMNS)		
@@ -133,7 +127,11 @@ void LedMatrix_Driver::setString(std::string str){
 	unsigned short letterCount = 0;
 	unsigned short horizontalLayerCount = 0;
 	unsigned short verticalLayerCount = 0;
+	// isSetting = true;
 
+	emptyBuffer();
+
+	// miosix::Lock<miosix::Mutex> lock(mutex);
 
 	if (str.length() > LED_MAX_CHARS){
 		setString("Too  Long");
@@ -287,6 +285,10 @@ void LedMatrix_Driver::setString(std::string str){
 			setChar(NINE, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
 			break;
+		case '.':
+			setChar(POINT, horizontalLayerCount, verticalLayerCount);
+			letterCount++;
+			break;
 		default:
 			setChar(SPACE, horizontalLayerCount, verticalLayerCount);
 			letterCount++;
@@ -294,10 +296,18 @@ void LedMatrix_Driver::setString(std::string str){
 		}	
 		checkVerticalLayer(verticalLayerCount);
 	}
+
+	// isSetting = false;
+	// cv.signal();
 }
 
 void LedMatrix_Driver::writeLeds(){ 
+		
 	for (int i = 0; i < LED_MATRIX_ROWS; i++){
+		// miosix::Lock<miosix::Mutex> lock(mutex);
+		// while (isSetting)
+		// 	cv.wait(lock);
+
 		ROWS[i].low();
 		for (int j = 0; j < LED_MATRIX_COLUMNS; j++){
 			if (bufStr[i][j] == true){
@@ -307,6 +317,7 @@ void LedMatrix_Driver::writeLeds(){
 				COLS[j].high();
 			}
 		}
+
 		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
 		ROWS[i].high();
 		columnsOff();
@@ -315,6 +326,7 @@ void LedMatrix_Driver::writeLeds(){
 
 void LedMatrix_Driver::emptyBuffer(){
 	for (unsigned int i = 0; i < LED_MATRIX_ROWS; i++){
+		// miosix::Lock<miosix::Mutex> lock(mutex);
 		for (unsigned int j = 0; j < LED_MATRIX_COLUMNS; j++){
 			bufStr[i][j] = 0;
 		}
@@ -325,11 +337,7 @@ void LedMatrix_Driver::refreshThreadMain(void *param){
 	while(true)
 	{
 		//refresh next row
-		// TODO: add condition variable to notify readers
-		{
-		std::unique_lock<miosix::Mutex> lock(LedMatrix_Driver::mutex);
 		writeLeds();
-		}
 
 	}
 }

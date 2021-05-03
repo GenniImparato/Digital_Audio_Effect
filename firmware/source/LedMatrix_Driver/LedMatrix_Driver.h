@@ -30,13 +30,16 @@ class LedMatrix_Driver
 		//private contructor
 		LedMatrix_Driver() {};
 
+		static miosix::Mutex 	mutex;
+		static miosix::ConditionVariable cv;
+		
 		static void				refreshThreadMain(void *param);
 
-		static miosix::Mutex 	mutex;
 		static miosix::Thread*	refreshThread;
-		// LedString *bufStr {};
+
 
 	public:
+
 		//initialize
 		static void 			init();
 		static void				fillVectors(); //Gpios are handled easier using them in Vectors
@@ -46,6 +49,7 @@ class LedMatrix_Driver
 		static void 			columnsOff();
 
 		//thread safe writer methods
+		//TODO: static void 			setLed(...);
 		static void				setChar(LedChar ledChar, unsigned short ledHorizontalLayer, unsigned short ledVerticalLayer);
 		static void				setString(std::string str);
 		static void				writeLeds();
