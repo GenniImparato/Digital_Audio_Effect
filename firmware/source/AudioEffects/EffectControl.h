@@ -3,19 +3,25 @@
 
 #include "../utils.h"
 #include <math.h>
+#include <string>
+#include <vector>
 
 class EffectControl
 {
      public:
-          EffectControl()            {};
-          virtual ~EffectControl()   {};
+          EffectControl()            {iVal = 0; fVal = 0;};
+          virtual ~EffectControl()   
+          {
+               choiseNames.clear();
+          };
 
           void setValueFromPot(unsigned short adcVal)
           {
                this->lastPotVal = this->potValue;
                this->potValue = adcVal;
-               convertedI = false;
-               convertedF = false;
+               this->lastConversionF = convertedF;
+               this->convertedI = false;
+               this->convertedF = false;
           }
 
           int getIntValue(int minVal, int maxVal)
@@ -42,6 +48,21 @@ class EffectControl
                return fVal;
           }
 
+          void setName(std::string name)
+          {
+               this->name = name;
+          }
+
+          void setFloatDigits(int fDigits)
+          {
+               this->fDigits = fDigits;
+          }
+
+          void addChoiseName(std::string name)
+          {
+               choiseNames.push_back(name);
+          }
+
           /*bool isChangedFloat(float diff)
           {
                return (abs(fLastVal-fVal) >= diff);
@@ -57,15 +78,42 @@ class EffectControl
                return (abs(iLastVal-iVal) >= diff);
           }
 
-     protected:
-          unsigned short      potValue = 2000;
-          unsigned short      lastPotVal=0;
-          float               fVal=0;
-          float               fLastVal=0;
-          int                 iVal=0;
-          int                 iLastVal=0;
-          bool                convertedF=false;
-          bool                convertedI=false;
+          std::string getMatrixString()
+          {
+               char buff[9];
+               if(convertedF)
+                    sprintf(buff, "%s%.*f", name.c_str(), fDigits, fVal);
+               else if(convertedI)
+               {
+                    if(choiseNames.size()>iVal)
+                         sprintf(buff, "%s%s", name.c_str(), choiseNames[iVal].c_str());
+                    else sprintf(buff, "%s%d", name.c_str(), iVal);
+               }
+               else if(lastConversionF)
+                    sprintf(buff, "%s%.*f", name.c_str(), fDigits, fLastVal);
+               else
+               {
+                    if(choiseNames.size()>iLastVal)
+                         sprintf(buff, "%s%s", name.c_str(), choiseNames[iLastVal].c_str());
+                    else sprintf(buff, "%s%d", name.c_str(), iLastVal);
+               }
+
+               return std::string(buff);
+          }
+
+     private:
+          unsigned short           potValue = 2000;
+          unsigned short           lastPotVal=0;
+          float                    fVal=0;
+          float                    fLastVal=0;
+          int                      iVal=0;
+          int                      iLastVal=0;
+          bool                     convertedF=false;
+          bool                     convertedI=false;
+          bool                     lastConversionF=false;
+          std::string              name="CTRL ";
+          int                      fDigits=0;
+          std::vector<std::string> choiseNames;
 };
 
 /*

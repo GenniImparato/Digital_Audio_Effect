@@ -4,6 +4,8 @@
 #include <cstdlib> 
 #include <ctime> 
 
+using namespace std;
+
 Oscillator::Oscillator(int wavetableSize, float frequency, float amplitude)
 {
     this->wavetableSize = wavetableSize;
@@ -181,6 +183,11 @@ Synthesizer::Synthesizer()  :AudioEffect()
         holdControl[i] = false;
 
     srand((unsigned)time(0)); 
+
+    controls[3].addChoiseName(string("FREQ"));
+    controls[3].addChoiseName(string("AMPL"));
+    controls[3].addChoiseName(string("MODE"));
+    controls[3].addChoiseName(string("SPEED"));
 }
 
 Synthesizer::~Synthesizer()
@@ -209,7 +216,26 @@ void Synthesizer::postWrite()
     if(controls[3].isChangedInt(1))
     {
         for(int i=0; i<OSCILLATORS_COUNT; i++)
+        {
             holdControl[i] = true;
+
+            if(activeParam==0)
+            {
+                controls[i].setName(string("FREQ")+to_string(i+1));
+                controls[i].setFloatDigits(0);
+            }
+            else if(activeParam==1)
+            {
+                controls[i].setName(string("AMPL")+to_string(i+1));
+                controls[i].setFloatDigits(2);
+            }
+            else if(activeParam==2)
+                controls[i].setName(string("MODE")+to_string(i+1));
+            else if(activeParam==3)
+                controls[i].setName(string("SPED")+to_string(i+1));
+            
+        }
+            
     }
 
     for(int i=0; i<OSCILLATORS_COUNT; i++)
@@ -225,7 +251,7 @@ void Synthesizer::postWrite()
             else if(activeParam==3)
                 osc[i]->setPatternSpeed(controls[i].getIntValue(0, PATTERN_MAX_SPEED-5));
         }
-        else if(controls[i].isPotMoved(60))
+        else if(controls[i].isPotMoved(10))
             holdControl[i] = false;
 
         osc[i]->update();

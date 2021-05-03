@@ -19,6 +19,7 @@ class AudioEffect
         virtual void            postWrite(){};
 
         void                    setControlFromPot(unsigned int control, unsigned int value);
+        EffectControl*          getControl(int control);
 
     protected:
         EffectControl           controls[POTS_COUNT];

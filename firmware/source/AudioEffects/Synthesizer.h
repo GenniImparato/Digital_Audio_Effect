@@ -35,7 +35,7 @@ class Oscillator
         float           patternFrequency = 0;
         int             center;
         int             phase;
-        int             pattern = 3;
+        int             pattern = 0;
         int             patternIndex1 = 0;
         int             patternIndex2 = 0;
         bool            patternIndex2Updated = false;

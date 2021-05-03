@@ -16,6 +16,30 @@ typedef Gpio<GPIOA_BASE,3> pot2;
 typedef Gpio<GPIOA_BASE,1> pot3;
 typedef Gpio<GPIOC_BASE,4> audioInput;
 
+template <uint8_t N, class input_t = uint16_t, class sum_t = uint32_t>
+class SMA {
+  public:
+    input_t operator()(input_t input) {
+        sum -= previousInputs[index];
+        sum += input;
+        previousInputs[index] = input;
+        if (++index == N)
+            index = 0;
+        return (sum + (N / 2)) / N;
+    }
+    
+    static_assert(
+        sum_t(0) < sum_t(-1),  // Check that `sum_t` is an unsigned type
+        "Error: sum data type should be an unsigned integer, otherwise, "
+        "the rounding operation in the return statement is invalid.");
+
+  private:
+    uint8_t index             = 0;
+    input_t previousInputs[N] = {};
+    sum_t sum                 = 0;
+};
+
+
 void ADC_Driver::init()
 {
     dmaBuffer = new AudioBufferQueue();
@@ -157,7 +181,13 @@ unsigned int ADC_Driver::singleConversionPot(unsigned short pot)
 	if(pot>=POTS_COUNT)
 		return 0;
 
-	return singleConversion(potChannels[pot]);
+    int filteredValue;
+
+    static SMA<20> filter;
+    for(int i=0; i<20; i++)
+        filteredValue = filter(singleConversion(potChannels[pot]));
+    
+	return filteredValue;
 }
 
 /**

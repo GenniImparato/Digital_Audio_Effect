@@ -1,6 +1,7 @@
 #include "AudioChain.h"
 #include "DAC_Driver/DAC_Driver.h"
 #include "ADC_Driver/ADC_Driver.h"
+#include "LedMatrix_Driver/LedMatrix_Driver.h"
 
 using namespace miosix;
 
@@ -16,7 +17,9 @@ Thread*                 AudioChain::writeDACThread = nullptr;
 AudioEffect*            AudioChain::activeEffect = nullptr;
 int                     AudioChain::activeSource = 0;
 AudioEffect*            AudioChain::synth = nullptr;
-bool                    AudioChain::controlSynth = false;
+bool                    AudioChain::controlSynth = true;
+
+miosix::Timer refreshLastTimer;
 
 void AudioChain::init()
 {
@@ -27,6 +30,8 @@ void AudioChain::init()
     //nextEffect();
 
     nextSource();
+
+    refreshLastTimer.start();
 }
 
 /*AudioChain::~AudioChain()
@@ -45,7 +50,7 @@ void AudioChain::startThreads()
 {
     readADCThread = Thread::create(&AudioChain::readADCThreadMain, 2048, 3);
     writeDACThread = Thread::create(&AudioChain::writeDACThreadMain, 2048, 3);
-    potThread = Thread::create(&AudioChain::potThreadMain, STACK_MIN, 0);
+    potThread = Thread::create(&AudioChain::potThreadMain, 1024, 0);
 }
 
 
@@ -154,11 +159,45 @@ void AudioChain::potLoop()
         for(int i=0; i<CONTROLS_COUNT; i++)
         {
             unsigned short val = ADC_Driver::singleConversionPot(i);
-            
+
+            AudioEffect *controlEffect;
+
             if(controlSynth)
-                synth->setControlFromPot(i, val);
+                controlEffect = synth;
             else
-                activeEffect->setControlFromPot(i, val);
+                controlEffect = activeEffect;
+
+            controlEffect->setControlFromPot(i, val);
+
+            static int lastPotChanged = 0;
+            bool moved=false;
+
+            for(int i=0; i<POTS_COUNT; i++)
+            {
+                EffectControl* ctrl = controlEffect->getControl(i);
+
+                if(ctrl->isPotMoved(10))
+                {
+                    LedMatrix_Driver::emptyBuffer();
+                    LedMatrix_Driver::setString(ctrl->getMatrixString());
+                    lastPotChanged = i;
+                    moved = true;
+                }
+            }
+
+            //refresh last moved control if no other is moved
+            
+
+            /*miosix::Timer checkTimer = refreshLastTimer;
+            checkTimer.stop();
+            if(!moved && checkTimer.interval() > 100)
+                LedMatrix_Driver::setString(controlEffect->getControl(lastPotChanged)->getMatrixString());
+            else
+            {
+                moved = false;
+                refreshLastTimer.stop();
+                refreshLastTimer.start();
+            }*/
         }
 
     }

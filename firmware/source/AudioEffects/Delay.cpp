@@ -6,7 +6,11 @@ Delay::Delay()
 {
 	for(int i=0; i<DELAY_SAMPLES_COUNT; i++)
 		delayBuff[i] = 0;
+
 	delayIndex=0;
+
+	controls[0].setName(std::string("TIME "));
+	controls[1].setName(std::string("FEDBK"));
 }
 
 void Delay::writeNextBuffer(float* inBuff, float* outBuff)

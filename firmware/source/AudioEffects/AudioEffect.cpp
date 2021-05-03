@@ -27,3 +27,11 @@ void AudioEffect::setControlFromPot(unsigned int control, unsigned int value)
 
     controls[control].setValueFromPot(value);
 }
+
+EffectControl* AudioEffect::getControl(int control)
+{
+    if(control>=POTS_COUNT)
+        return nullptr;
+
+    return &controls[control];
+}
