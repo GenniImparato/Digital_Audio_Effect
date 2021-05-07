@@ -6,12 +6,10 @@
 #include "DAC_Driver/DAC_Driver.h"
 #include "LedMatrix_Driver/LedMatrix_Driver.h"
 
-
 using namespace miosix;
 
 //AudioEffect			*effect;
 miosix::Mutex 	mutex;
-
 
 int main()
 {
@@ -29,8 +27,7 @@ int main()
 	AudioChain::startThreads();
 
 	//start blink
-	for(int i=0; i<5; i++)
-	{
+	for(int i=0; i<5; i++){
 		ledOn();
 		Thread::sleep(100);
 		ledOff();
@@ -38,29 +35,14 @@ int main()
 	}
 
 	//main loop
-    while(true)
-    {
-		/*Thread::sleep(1000);
-		{
-			std::unique_lock<miosix::Mutex> lock(mutex);
-			LedMatrix_Driver::emptyBuffer();
-			LedMatrix_Driver::setString("genni");
-		}
+    while(true){
+		// LedMatrix_Driver::setString("0123456789");
+		// {
+		// 	FastInterruptDisableLock dLock;
+		// 	LedMatrix_Driver::setLed(1, 4);
+		// 	Thread::sleep(1000);
+		// }
 		Thread::sleep(1000);
-		{
-			std::unique_lock<miosix::Mutex> lock(mutex);
-			LedMatrix_Driver::setString("come");
-		}
-		Thread::sleep(1000);
-		{
-			std::unique_lock<miosix::Mutex> lock(mutex);
-			LedMatrix_Driver::setString("va");
-		}
-		Thread::sleep(1000);
-		{
-			std::unique_lock<miosix::Mutex> lock(mutex);
-			LedMatrix_Driver::setString("0123456789");
-		}*/
-		Thread::sleep(1000);
+
     }
 }

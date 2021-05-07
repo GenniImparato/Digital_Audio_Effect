@@ -3,7 +3,6 @@
 #include "Leds_Chars.h"
 #include <cstring> // To use memcpy
 #include <cctype> // To use toupper()
-#include <mutex>
 
 using namespace miosix;
 
@@ -15,6 +14,40 @@ bool isSetting = false;
 
 std::vector<GpioPin> ROWS;
 std::vector<GpioPin> COLS;
+
+static unsigned short rowCount = 0;
+
+
+void LedMatrix_Driver::configureTIM5(void){
+    // enable TIM5 clock (bit 7)
+    RCC->APB1ENR|= RCC_APB1ENR_TIM5EN;           
+
+    // 300 Hz
+    // TIM5->PSC = 349;
+    // TIM5->ARR = 399;
+
+	// 500 Hz
+    TIM5->PSC = 349;
+    TIM5->ARR = 239;
+
+
+    /* Reset the MMS Bits */
+    TIM5->CR2 &= (uint16_t)~TIM_CR2_MMS;
+    /* Select the TRGO source */
+    TIM5->CR2 |=  TIM_CR2_MMS_1; //010: UPDATE EVENT       
+
+    // Update Interrupt Enable
+    TIM5->DIER |= TIM_DIER_UIE;
+
+    // enable TIM5 IRQ from NVIC
+    NVIC_SetPriority(TIM5_IRQn, 0);//Medium priority for LedMatrix
+    NVIC_EnableIRQ(TIM5_IRQn);
+
+    // Enable Timer 5 module (Counter ENable, bit 0)
+    TIM5->CR1 |= TIM_CR1_CEN;
+	TIM5->CR1 &= ~(TIM_CR1_UDIS); //Update Enable
+	TIM5->CR1 &= ~(TIM_CR1_DIR);// Upcounting
+}
 
 void checkHorizontalLayer(unsigned short &letterCount, unsigned short &horizontalLayerCount, unsigned short &verticalLayerCount){
 	if(letterCount == LED_MAX_CHARS/2 && horizontalLayerCount <= LED_HORIZONTAL_LAYERS-1){
@@ -40,6 +73,9 @@ void LedMatrix_Driver::init()
 
 	// Turn OFF all leds since setting their mode to OUTPUT turns them on
 	turnOffAllLeds();
+	
+	// TIM5 init
+	configureTIM5();
 
 	refreshThread = Thread::create(&LedMatrix_Driver::refreshThreadMain, STACK_MIN, 0);
 }
@@ -101,7 +137,20 @@ void LedMatrix_Driver::rowsOff(){
 void LedMatrix_Driver::columnsOff(){
 	for (unsigned int i = 0; i < COLS.size(); i++){
 		COLS[i].high();
-	}	
+	}
+}
+
+// TODO: da implementare
+void LedMatrix_Driver::setLed(unsigned short x, unsigned short y){
+	emptyBuffer();
+
+	if (x > LED_MATRIX_ROWS || y > LED_MATRIX_COLUMNS){
+		setString("OUT  BOUND");
+	}
+	else{
+		ROWS[x].low();
+		COLS[y].low();
+	}
 }
 
 /* 	ledHorizontalLayer: can have values 0-1 
@@ -114,6 +163,7 @@ void LedMatrix_Driver::columnsOff(){
 		when 4, it targets columns 12-14
 */
 void LedMatrix_Driver::setChar(LedChar ledChar, unsigned short ledHorizontalLayer, unsigned short ledVerticalLayer){
+	// emptyBuffer();
 	for (int i = LED_SUBMATRIX_ROWS*ledHorizontalLayer; i < LED_MATRIX_ROWS; i++){
 		for (int j = LED_SUBMATRIX_COLUMNS*ledVerticalLayer; j < LED_MATRIX_COLUMNS; j++){
 			if (bufStr[i][j] == 0 && (i - LED_SUBMATRIX_ROWS*ledHorizontalLayer) < LED_SUBMATRIX_ROWS && (j - LED_SUBMATRIX_COLUMNS*ledVerticalLayer) < LED_SUBMATRIX_COLUMNS)		
@@ -127,18 +177,16 @@ void LedMatrix_Driver::setString(std::string str){
 	unsigned short letterCount = 0;
 	unsigned short horizontalLayerCount = 0;
 	unsigned short verticalLayerCount = 0;
-	// isSetting = true;
 
 	emptyBuffer();
 
-	// miosix::Lock<miosix::Mutex> lock(mutex);
-
 	if (str.length() > LED_MAX_CHARS){
 		setString("Too  Long");
-		return;
 	}
+	else{
+		FastInterruptDisableLock dLock;
 
-	for (unsigned int i = 0; i < str.length(); i++){
+		for (unsigned int i = 0; i < str.length(); i++){
 		checkHorizontalLayer(letterCount, horizontalLayerCount, verticalLayerCount);
 		switch (toupper(str[i])){
 		case 'A':
@@ -295,51 +343,71 @@ void LedMatrix_Driver::setString(std::string str){
 			break;
 		}	
 		checkVerticalLayer(verticalLayerCount);
+		}
 	}
-
-	// isSetting = false;
-	// cv.signal();
 }
 
-void LedMatrix_Driver::writeLeds(){ 
+void LedMatrix_Driver::writeLeds(){
+	if (rowCount > 0)	
+		ROWS[rowCount-1].high();
 		
-	for (int i = 0; i < LED_MATRIX_ROWS; i++){
-		// miosix::Lock<miosix::Mutex> lock(mutex);
-		// while (isSetting)
-		// 	cv.wait(lock);
-
-		ROWS[i].low();
-		for (int j = 0; j < LED_MATRIX_COLUMNS; j++){
-			if (bufStr[i][j] == true){
-				COLS[j].low();
-			}
-			if (bufStr[i][j] == false){
-				COLS[j].high();
-			}
+	columnsOff();
+	ROWS[rowCount].low();
+	for (int i = 0; i < LED_MATRIX_COLUMNS; i++){
+		if (bufStr[rowCount][i] == true){
+			COLS[i].low();
 		}
-
-		Thread::sleep(LED_MATRIX_REFRESH_PERIOD);
-		ROWS[i].high();
-		columnsOff();
+		if (bufStr[rowCount][i] == false){
+			COLS[i].high();
+		}
 	}
+	
+	rowCount = (rowCount < LED_MATRIX_ROWS) ? rowCount + 1 : 0;
 }
 
 void LedMatrix_Driver::emptyBuffer(){
+	
+	FastInterruptDisableLock dLock;
+
 	for (unsigned int i = 0; i < LED_MATRIX_ROWS; i++){
-		// miosix::Lock<miosix::Mutex> lock(mutex);
 		for (unsigned int j = 0; j < LED_MATRIX_COLUMNS; j++){
 			bufStr[i][j] = 0;
 		}
 	}
 }
 
+void LedMatrix_Driver::IRQTIM5Handler(void){  
+	// Clear interrupt status
+    if (TIM5->DIER & 0x01) {
+        if (TIM5->SR & 0x01) {
+            TIM5->SR &= ~(1U << 0);
+        }
+    }
+	writeLeds();
+}
+
 void LedMatrix_Driver::refreshThreadMain(void *param){
 	while(true)
 	{
-		//refresh next row
-		writeLeds();
+		// Refresh next row
 
 	}
+}
+
+/**
+ * Timer 5 interrupt
+ */
+void __attribute__((naked)) TIM5_IRQHandler(){
+    saveContext();
+    asm volatile("bl _Z16TIM5_IRQHandler_v");
+    restoreContext();
+}
+
+/**
+ * Timer 5 interrupt actual implementation
+ */
+void __attribute__((used)) TIM5_IRQHandler_(){
+    LedMatrix_Driver::IRQTIM5Handler();
 }
 
 

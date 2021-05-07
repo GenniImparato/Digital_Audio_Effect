@@ -36,6 +36,7 @@ class LedMatrix_Driver
 		static void				refreshThreadMain(void *param);
 
 		static miosix::Thread*	refreshThread;
+		static void 			configureTIM5();
 
 
 	public:
@@ -49,10 +50,11 @@ class LedMatrix_Driver
 		static void 			columnsOff();
 
 		//thread safe writer methods
-		//TODO: static void 			setLed(...);
+		static void 			setLed(unsigned short x, unsigned short y);
 		static void				setChar(LedChar ledChar, unsigned short ledHorizontalLayer, unsigned short ledVerticalLayer);
 		static void				setString(std::string str);
 		static void				writeLeds();
 		static void				emptyBuffer();
+		static void 			IRQTIM5Handler();
 };
 #endif
