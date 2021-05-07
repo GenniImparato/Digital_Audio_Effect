@@ -40,7 +40,7 @@ void LedMatrix_Driver::configureTIM5(void){
     TIM5->DIER |= TIM_DIER_UIE;
 
     // enable TIM5 IRQ from NVIC
-    NVIC_SetPriority(TIM5_IRQn, 0);//Medium priority for LedMatrix
+    NVIC_SetPriority(TIM5_IRQn, 0);//Low priority for LedMatrix
     NVIC_EnableIRQ(TIM5_IRQn);
 
     // Enable Timer 5 module (Counter ENable, bit 0)
@@ -76,8 +76,6 @@ void LedMatrix_Driver::init()
 	
 	// TIM5 init
 	configureTIM5();
-
-	refreshThread = Thread::create(&LedMatrix_Driver::refreshThreadMain, STACK_MIN, 0);
 }
 
 void LedMatrix_Driver::fillVectors(){
@@ -178,13 +176,13 @@ void LedMatrix_Driver::setString(std::string str){
 	unsigned short horizontalLayerCount = 0;
 	unsigned short verticalLayerCount = 0;
 
-	emptyBuffer();
 
 	if (str.length() > LED_MAX_CHARS){
 		setString("Too  Long");
 	}
 	else{
 		FastInterruptDisableLock dLock;
+		emptyBuffer();
 
 		for (unsigned int i = 0; i < str.length(); i++){
 		checkHorizontalLayer(letterCount, horizontalLayerCount, verticalLayerCount);
@@ -366,9 +364,6 @@ void LedMatrix_Driver::writeLeds(){
 }
 
 void LedMatrix_Driver::emptyBuffer(){
-	
-	FastInterruptDisableLock dLock;
-
 	for (unsigned int i = 0; i < LED_MATRIX_ROWS; i++){
 		for (unsigned int j = 0; j < LED_MATRIX_COLUMNS; j++){
 			bufStr[i][j] = 0;
@@ -384,14 +379,6 @@ void LedMatrix_Driver::IRQTIM5Handler(void){
         }
     }
 	writeLeds();
-}
-
-void LedMatrix_Driver::refreshThreadMain(void *param){
-	while(true)
-	{
-		// Refresh next row
-
-	}
 }
 
 /**
