@@ -30,11 +30,6 @@ class LedMatrix_Driver
 		//private contructor
 		LedMatrix_Driver() {};
 
-		static miosix::Mutex 	mutex;
-		static miosix::ConditionVariable cv;
-		
-		static void				refreshThreadMain(void *param);
-
 		static miosix::Thread*	refreshThread;
 		static void 			configureTIM5();
 

@@ -6,9 +6,6 @@
 
 using namespace miosix;
 
-miosix::Mutex 	LedMatrix_Driver::mutex;
-miosix::ConditionVariable LedMatrix_Driver::cv;
-miosix::Thread*	LedMatrix_Driver::refreshThread;
 LedString bufStr {}; //Buffer
 bool isSetting = false;
 
@@ -350,7 +347,8 @@ void LedMatrix_Driver::writeLeds(){
 		ROWS[rowCount-1].high();
 		
 	columnsOff();
-	ROWS[rowCount].low();
+	if (rowCount < LED_MATRIX_ROWS)	
+		ROWS[rowCount].low();
 	for (int i = 0; i < LED_MATRIX_COLUMNS; i++){
 		if (bufStr[rowCount][i] == true){
 			COLS[i].low();
@@ -371,7 +369,8 @@ void LedMatrix_Driver::emptyBuffer(){
 	}
 }
 
-void LedMatrix_Driver::IRQTIM5Handler(void){  
+void LedMatrix_Driver::IRQTIM5Handler(void)
+{  
 	// Clear interrupt status
     if (TIM5->DIER & 0x01) {
         if (TIM5->SR & 0x01) {
