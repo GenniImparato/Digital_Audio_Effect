@@ -2,7 +2,7 @@
 
 using namespace miosix;
 
-const unsigned short    ADC_Driver::potChannels[POTS_COUNT] = {2,0,3,1};
+const unsigned short    ADC_Driver::potChannels[POTS_COUNT] = {2,8,3,1};
 
 AudioBufferQueue*       ADC_Driver::dmaBuffer;
 miosix::Thread*         ADC_Driver::waitingThread;
@@ -11,7 +11,7 @@ unsigned short ADC_Driver::buffer[AUDIO_BUFFERS_SIZE];
 
 
 typedef Gpio<GPIOA_BASE,2> pot0;
-typedef Gpio<GPIOA_BASE,0> pot1;
+typedef Gpio<GPIOB_BASE,0> pot1;
 typedef Gpio<GPIOA_BASE,3> pot2;
 typedef Gpio<GPIOA_BASE,1> pot3;
 typedef Gpio<GPIOC_BASE,4> audioInput;

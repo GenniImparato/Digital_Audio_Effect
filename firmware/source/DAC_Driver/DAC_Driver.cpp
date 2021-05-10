@@ -14,7 +14,7 @@ typedef SoftwareI2C<sda,scl> i2c;
 AudioBufferQueue*   DAC_Driver::dmaBuffer;
 Thread*             DAC_Driver::waitingThread;
 bool                DAC_Driver::dmaRefillWaiting = false;
-//Thread*               DAC_Driver::thread;
+Thread*             DAC_Driver::restartThread;
 
 /**
  * Waits until a buffer is available for writing
@@ -149,7 +149,7 @@ void DAC_Driver::init()
     //Start playing
     dmaRefill();
 
-    //thread = Thread::create(&DAC_Driver::threadMain, 64);
+    restartThread = Thread::create(&DAC_Driver::threadMain, 256, 0);
 
     send(0x02,0x9e);
 }
@@ -191,7 +191,7 @@ void DAC_Driver::IRQdmaEndHandler()
 }
 
 
-/*void DAC_Driver::threadMain(void *param)
+void DAC_Driver::threadMain(void *param)
 {
     while(true)
     {
@@ -199,10 +199,10 @@ void DAC_Driver::IRQdmaEndHandler()
         {
             dmaRefillWaiting = false;
             dmaRefill();
-            thread->wait();
         }
+        miosix::Thread::sleep(500);
     }
-}*/
+}
 
 /**
  * DMA end of transfer interrupt

@@ -11,7 +11,7 @@
 
 
 #define CONTROLS_COUNT              4
-#define CONTROLS_REFRESH_PERIOD     5 // ms
+#define CONTROLS_REFRESH_PERIOD     50 // ms
 
 #define AUDIO_SOURCES_COUNT         2
 #define ADC_SOURCE                  0
@@ -29,6 +29,10 @@ class AudioChain
         static void                     nextEffect();
         static void                     nextSource();
 
+        static void                     controlSynth();
+        static void                     controlEffect();
+        static bool                     isSynthControlled();
+
     private:
         AudioChain();
 
@@ -36,7 +40,8 @@ class AudioChain
         static  float                   adcBuff[AUDIO_BUFFERS_SIZE];
 
         static  miosix::Mutex           ctrlMutex;
-        static  miosix::Mutex           buffMutex;
+        static  miosix::Mutex           adcBuffMutex;
+        static  miosix::Mutex           effectMutex;
 
         //periodic thread that reads potentiometers, low priority
         static  miosix::Thread*         potThread;
@@ -48,7 +53,9 @@ class AudioChain
         static  AudioEffect*            activeEffect;
         static  int                     activeSource;
         static  AudioEffect*            synth;
-        static  bool                    controlSynth;
+        static  bool                    controlSynthFlag;
+        static  bool                    lastControlSynthFlag;
+        static  int                     effectChangedTimer;
 
         //effect main dsp loop (not static)
         static  void                    readADCLoop();

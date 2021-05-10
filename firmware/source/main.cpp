@@ -2,19 +2,15 @@
 #include <mutex>
 #include "config.h"
 #include "AudioChain.h"
+#include "Button.h"
 #include "ADC_Driver/ADC_Driver.h"
 #include "DAC_Driver/DAC_Driver.h"
 #include "LedMatrix_Driver/LedMatrix_Driver.h"
 
 using namespace miosix;
 
-//AudioEffect			*effect;
-miosix::Mutex 	mutex;
-
 int main()
 {
-	//effect = new Distorsion();
-
 	LedMatrix_Driver::init();
 
 	AudioChain::init();
@@ -27,22 +23,19 @@ int main()
 	AudioChain::startThreads();
 
 	//start blink
-	for(int i=0; i<5; i++){
+	for(int i=0; i<5; i++)
+	{
 		ledOn();
 		Thread::sleep(100);
 		ledOff();
 		Thread::sleep(100);
 	}
 
-	//main loop
-    while(true){
-		// LedMatrix_Driver::setString("0123456789");
-		// {
-		// 	FastInterruptDisableLock dLock;
-		// 	LedMatrix_Driver::setLed(1, 4);
-		// 	Thread::sleep(1000);
-		// }
-		Thread::sleep(1000);
+	Button<GPIOA_BASE,0> button;
 
+	//main loop
+    while(true)
+    {
+		button.check();
     }
 }

@@ -8,7 +8,8 @@ using namespace miosix;
 float                   AudioChain::adcBuff[AUDIO_BUFFERS_SIZE];
 
 Mutex                   AudioChain::ctrlMutex;
-Mutex                   AudioChain::buffMutex;
+Mutex                   AudioChain::adcBuffMutex;
+Mutex                   AudioChain::effectMutex;
 
 Thread*                 AudioChain::potThread = nullptr;
 Thread*                 AudioChain::readADCThread = nullptr;
@@ -17,21 +18,20 @@ Thread*                 AudioChain::writeDACThread = nullptr;
 AudioEffect*            AudioChain::activeEffect = nullptr;
 int                     AudioChain::activeSource = 0;
 AudioEffect*            AudioChain::synth = nullptr;
-bool                    AudioChain::controlSynth = true;
+bool                    AudioChain::controlSynthFlag = false;
+bool                    AudioChain::lastControlSynthFlag = false;
+int                     AudioChain::effectChangedTimer = 0;
 
-miosix::Timer refreshLastTimer;
 
 void AudioChain::init()
 {
     synth = new Synthesizer();
 
     nextEffect();
-    nextEffect();
+    //nextEffect();
     //nextEffect();
 
     nextSource();
-
-    refreshLastTimer.start();
 }
 
 /*AudioChain::~AudioChain()
@@ -56,10 +56,24 @@ void AudioChain::startThreads()
 
 void AudioChain::nextEffect()
 {
+
     static int count = -1;
     count++;
     if(count>=AUDIO_EFFECTS_COUNT)
         count = 0;
+
+    {
+        Lock<Mutex> lock(ctrlMutex);
+        if(controlSynthFlag)
+        {
+            controlSynthFlag = false;
+            LedMatrix_Driver::setString(std::string("FX   ") + activeEffect->getName());
+            effectChangedTimer = 50;
+            return;
+        }
+    }
+
+    Lock<Mutex> lock(effectMutex);
 
     if(activeEffect != nullptr)
         delete activeEffect;
@@ -74,17 +88,57 @@ void AudioChain::nextEffect()
             activeEffect = new Delay();
             break;
     }
+
+    effectChangedTimer = 50;
+    LedMatrix_Driver::setString(std::string("FX   ") + activeEffect->getName());
 }
 
 void AudioChain::nextSource()
 {
+    Lock<Mutex> lock(effectMutex);
+
     int old = activeSource;
     activeSource++;
 
     if(activeSource>=AUDIO_SOURCES_COUNT)
         activeSource = 0;
+
+    if(activeSource == SYNTH_SOURCE)
+    {
+        Lock<Mutex> lock(ctrlMutex);
+        controlSynthFlag = true;
+        LedMatrix_Driver::setString(std::string("SRC  SYNTH"));
+    }
+    else if(activeSource == ADC_SOURCE)
+    {
+        Lock<Mutex> lock(ctrlMutex);
+        controlSynthFlag = false;
+        LedMatrix_Driver::setString(std::string("SRC  ADC"));
+    }
+
+    effectChangedTimer = 50;
+    
 }
 
+
+void AudioChain::controlSynth()
+{
+    Lock<Mutex> lock(ctrlMutex);
+    lastControlSynthFlag = controlSynthFlag;
+    controlSynthFlag = true;
+}
+
+void AudioChain::controlEffect()
+{
+    Lock<Mutex> lock(ctrlMutex);
+    lastControlSynthFlag = controlSynthFlag;
+    controlSynthFlag = false;
+}
+
+bool  AudioChain::isSynthControlled()
+{
+    return controlSynthFlag;
+}
 
 
 
@@ -93,7 +147,7 @@ void AudioChain::readADCLoop()
     const unsigned short* inBuff = ADC_Driver::getReadableBuffer(readADCThread);
 
     {   
-        Lock<Mutex> dLock(buffMutex);
+        Lock<Mutex> dLock(adcBuffMutex);
         convertAudioBuffer_AdcToDsp(inBuff, adcBuff);
     }
     //printf("Buffer[%d] = %d\n", count, tmpBuff[100]);
@@ -108,15 +162,19 @@ void AudioChain::writeDACLoop()
     /*for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
         tmpBuff[i] = 2.0*i/AUDIO_BUFFERS_SIZE -1.0 ;*/
 
-    if(activeSource == ADC_SOURCE)
     {
-        Lock<Mutex> dLock(buffMutex);
-        activeEffect->writeNextBuffer(adcBuff, tmpBuff);    
-    }
-    else if(activeSource == SYNTH_SOURCE)
-    {
-        synth->writeNextBuffer(nullptr, tmpBuff);
-        activeEffect->writeNextBuffer(tmpBuff, tmpBuff);
+        Lock<Mutex> dLock2(effectMutex);
+        if(activeSource == ADC_SOURCE)
+        {
+            Lock<Mutex> dLock(adcBuffMutex);
+            
+            activeEffect->writeNextBuffer(adcBuff, tmpBuff);    
+        }
+        else if(activeSource == SYNTH_SOURCE)
+        {
+            synth->writeNextBuffer(nullptr, tmpBuff);
+            activeEffect->writeNextBuffer(tmpBuff, tmpBuff);
+        }
     }
 
     //suspend thread and waits if no buff
@@ -126,6 +184,7 @@ void AudioChain::writeDACLoop()
 
     {
         Lock<Mutex> lock(ctrlMutex);
+        Lock<Mutex> lock2(effectMutex);
         activeEffect->postWrite();
         synth->postWrite();
     }
@@ -133,8 +192,8 @@ void AudioChain::writeDACLoop()
 
 void AudioChain::convertAudioBuffer_AdcToDsp(const unsigned short* inBuff, float* outBuff)
 {
-    /*for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
-        outBuff[i] = map_d(inBuff[i], (double)(ADC_MIN), (double)(ADC_MAX), -1.0, 1.0);*/
+    for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
+        outBuff[i] = 2*inBuff[i]/4069.0 - 1;
 }
 
 void AudioChain::convertAudioBuffer_DspToDac(float* inBuff, unsigned short* outBuff)
@@ -156,34 +215,55 @@ void AudioChain::potLoop()
 {
     {
         Lock<Mutex> lock(ctrlMutex);
+
         for(int i=0; i<CONTROLS_COUNT; i++)
         {
             unsigned short val = ADC_Driver::filterConversionsPot(i);
 
+            Lock<Mutex> lock2(effectMutex);
+
             AudioEffect *controlEffect;
 
-            if(controlSynth)
+            if(controlSynthFlag)
                 controlEffect = synth;
             else
                 controlEffect = activeEffect;
 
             controlEffect->setControlFromPot(i, val);
 
+            //if controls target changed
+            /*if(lastControlSynthFlag != controlSynthFlag)
+            {
+                if(controlSynthFlag)
+                    LedMatrix_Driver::setString(std::string("SRC  SYNTH"));
+                else
+                    LedMatrix_Driver::setString(std::string("FX   ") + activeEffect->getName());
+
+                lastControlSynthFlag = controlSynthFlag;
+            }*/
+
             static int lastPotChanged = 0;
             bool moved=false;
 
-            for(int i=0; i<POTS_COUNT; i++)
+            if(effectChangedTimer==0)
             {
-                EffectControl* ctrl = controlEffect->getControl(i);
-
-                if(ctrl->isPotMoved(10))
+                for(int i=0; i<POTS_COUNT; i++)
                 {
-                    LedMatrix_Driver::emptyBuffer();
-                    LedMatrix_Driver::setString(ctrl->getMatrixString());
-                    lastPotChanged = i;
-                    moved = true;
+                    EffectControl* ctrl = controlEffect->getControl(i);
+
+                    if(ctrl->isPotMoved(20))
+                    {
+                        LedMatrix_Driver::setString(ctrl->getMatrixString());
+                        lastPotChanged = i;
+                        moved = true;
+                    }
                 }
             }
+            else
+            {
+                effectChangedTimer--;
+            }
+            
 
             //refresh last moved control if no other is moved
             

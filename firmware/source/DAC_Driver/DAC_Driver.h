@@ -20,8 +20,8 @@ class DAC_Driver
 		static bool					dmaRefillWaiting;
 
 		//DAC main thread loop
-		//static miosix::Thread*		thread;
-		//static void					threadMain(void* param);
+		static miosix::Thread*		restartThread;
+		static void					threadMain(void* param);
 
 
 	public:

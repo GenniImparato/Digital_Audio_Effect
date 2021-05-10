@@ -109,11 +109,11 @@ void Oscillator::update()
     //RANDOM
     else if(pattern == 3)
     {
-        if(patternIndex2Updated == 0)
+        if(patternIndex2Updated)
         {
             if(patternIndex2 == 0)
             {
-                patternFrequency = 1;
+                patternFrequency = (float)(rand()%1000)/1000;
                 patternAmplitude = 1;
             }
             else if(patternIndex2 == 1)
@@ -122,20 +122,24 @@ void Oscillator::update()
             }
             else if(patternIndex2 == 2)
             {
-                patternFrequency = 2;
+                patternFrequency = patternFrequency*2;
                 patternAmplitude = 1;
             }
             else if(patternIndex2 == 3)
             {
                 patternAmplitude = 0;
             }
-            else if(patternIndex2 == 4)
+            else if(patternIndex2 >= 4)
+            {
+                patternFrequency = (float)(rand()%1000)/2000;
+                patternAmplitude = 1;
                 patternIndex2 = 0;
+            }
         }
-        else
+        /*else
         {
             patternAmplitude = 0.0;
-        }
+        }*/
     }
 
     patternIndex2Updated=false;
@@ -188,6 +192,8 @@ Synthesizer::Synthesizer()  :AudioEffect()
     controls[3].addChoiseName(string("AMPL"));
     controls[3].addChoiseName(string("MODE"));
     controls[3].addChoiseName(string("SPEED"));
+
+    setName(string("NAME "));
 }
 
 Synthesizer::~Synthesizer()

@@ -48,7 +48,7 @@ class EffectControl
                return fVal;
           }
 
-          void setName(std::string name)
+          void setName(const std::string &name)
           {
                this->name = name;
           }
@@ -102,7 +102,7 @@ class EffectControl
           }
 
      private:
-          unsigned short           potValue = 2000;
+          unsigned short           potValue = 2000;                   
           unsigned short           lastPotVal=0;
           float                    fVal=0;
           float                    fLastVal=0;

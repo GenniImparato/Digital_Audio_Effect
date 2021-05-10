@@ -20,9 +20,15 @@ class AudioEffect
 
         void                    setControlFromPot(unsigned int control, unsigned int value);
         EffectControl*          getControl(int control);
+        
+        void                    setName(const std::string &name);
+        std::string             getName();
 
     protected:
         EffectControl           controls[POTS_COUNT];
+
+    private:
+        std::string             name;
 };
 
 

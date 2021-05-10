@@ -3,7 +3,7 @@
 
 #include "AudioEffect.h"
 
-#define DELAY_SAMPLES_COUNT	AUDIO_BUFFERS_SIZE*20		 	
+#define DELAY_SAMPLES_COUNT	AUDIO_BUFFERS_SIZE*40		 	
 
 class Delay	:public AudioEffect
 {
@@ -19,7 +19,7 @@ class Delay	:public AudioEffect
 		int					delayIndex 	= 0;
 		float				time		= 0.5;
 		float				feedback    = 0.45;
-		float 				wet 		= 1.0;
+		float 				cut 		= 1.0;
 
 		float				delayBuff[DELAY_SAMPLES_COUNT];
 

@@ -7,6 +7,7 @@ using namespace miosix;
 
 AudioEffect::AudioEffect()
 {
+	setName(std::string("NO FX"));
 }
 
 AudioEffect::~AudioEffect()
@@ -34,4 +35,14 @@ EffectControl* AudioEffect::getControl(int control)
         return nullptr;
 
     return &controls[control];
+}
+
+void AudioEffect::setName(const std::string &name)
+{
+    this->name = name;
+}
+
+std::string AudioEffect::getName()
+{
+    return this->name;
 }
