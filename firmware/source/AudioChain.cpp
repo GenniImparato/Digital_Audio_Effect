@@ -21,6 +21,8 @@ AudioEffect*            AudioChain::synth = nullptr;
 bool                    AudioChain::controlSynthFlag = false;
 bool                    AudioChain::lastControlSynthFlag = false;
 int                     AudioChain::effectChangedTimer = 0;
+int                     AudioChain::refreshLastPotTimer = 0;
+int                     AudioChain::lastPotChanged = -1;
 
 
 void AudioChain::init()
@@ -28,9 +30,6 @@ void AudioChain::init()
     synth = new Synthesizer();
 
     nextEffect();
-    //nextEffect();
-    //nextEffect();
-
     nextSource();
 }
 
@@ -68,7 +67,8 @@ void AudioChain::nextEffect()
         {
             controlSynthFlag = false;
             LedMatrix_Driver::setString(std::string("FX   ") + activeEffect->getName());
-            effectChangedTimer = 50;
+            effectChangedTimer = 100;
+            lastPotChanged = -1;
             return;
         }
     }
@@ -89,7 +89,8 @@ void AudioChain::nextEffect()
             break;
     }
 
-    effectChangedTimer = 50;
+    effectChangedTimer = 100;
+    lastPotChanged = -1;
     LedMatrix_Driver::setString(std::string("FX   ") + activeEffect->getName());
 }
 
@@ -116,7 +117,7 @@ void AudioChain::nextSource()
         LedMatrix_Driver::setString(std::string("SRC  ADC"));
     }
 
-    effectChangedTimer = 50;
+    effectChangedTimer = 100;
     
 }
 
@@ -183,8 +184,7 @@ void AudioChain::writeDACLoop()
     DAC_Driver::bufferFilled();
 
     {
-        Lock<Mutex> lock(ctrlMutex);
-        Lock<Mutex> lock2(effectMutex);
+        Lock<Mutex> lock(effectMutex);
         activeEffect->postWrite();
         synth->postWrite();
     }
@@ -201,7 +201,7 @@ void AudioChain::convertAudioBuffer_DspToDac(float* inBuff, unsigned short* outB
     for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
     {
         if(inBuff[i] > 1.0)
-            outBuff[i] = 60000;
+            outBuff[i] = 50000;
         if(inBuff[i] < -1.0)
             outBuff[i] = 0;
         else
@@ -213,71 +213,42 @@ void AudioChain::convertAudioBuffer_DspToDac(float* inBuff, unsigned short* outB
 
 void AudioChain::potLoop()
 {
+    for(int i=0; i<POTS_COUNT; i++)
     {
-        Lock<Mutex> lock(ctrlMutex);
+        unsigned short val = ADC_Driver::filterConversionsPot(i);
 
-        for(int i=0; i<CONTROLS_COUNT; i++)
+        Lock<Mutex> lock(effectMutex);
+
+        AudioEffect *controlEffect;
+
+        if(controlSynthFlag)
+            controlEffect = synth;
+        else
+            controlEffect = activeEffect;
+
+        controlEffect->setControlFromPot(i, val);
+
+        if(effectChangedTimer==0)
         {
-            unsigned short val = ADC_Driver::filterConversionsPot(i);
+            EffectControl* ctrl = controlEffect->getControl(i);
 
-            Lock<Mutex> lock2(effectMutex);
-
-            AudioEffect *controlEffect;
-
-            if(controlSynthFlag)
-                controlEffect = synth;
-            else
-                controlEffect = activeEffect;
-
-            controlEffect->setControlFromPot(i, val);
-
-            //if controls target changed
-            /*if(lastControlSynthFlag != controlSynthFlag)
+            if(ctrl->isPotMoved(20))
             {
-                if(controlSynthFlag)
-                    LedMatrix_Driver::setString(std::string("SRC  SYNTH"));
-                else
-                    LedMatrix_Driver::setString(std::string("FX   ") + activeEffect->getName());
-
-                lastControlSynthFlag = controlSynthFlag;
-            }*/
-
-            static int lastPotChanged = 0;
-            bool moved=false;
-
-            if(effectChangedTimer==0)
-            {
-                for(int i=0; i<POTS_COUNT; i++)
-                {
-                    EffectControl* ctrl = controlEffect->getControl(i);
-
-                    if(ctrl->isPotMoved(20))
-                    {
-                        LedMatrix_Driver::setString(ctrl->getMatrixString());
-                        lastPotChanged = i;
-                        moved = true;
-                    }
-                }
+                LedMatrix_Driver::setString(ctrl->getMatrixString());
+                lastPotChanged = i;
             }
-            else
+
+            if(refreshLastPotTimer <= 0)
             {
-                effectChangedTimer--;
+                if(lastPotChanged != -1)
+                    LedMatrix_Driver::setString(controlEffect->getControl(lastPotChanged)->getMatrixString());
+                refreshLastPotTimer = 10;
             }
-            
-
-            //refresh last moved control if no other is moved
-            
-
-            /*miosix::Timer checkTimer = refreshLastTimer;
-            checkTimer.stop();
-            if(!moved && checkTimer.interval() > 100)
-                LedMatrix_Driver::setString(controlEffect->getControl(lastPotChanged)->getMatrixString());
-            else
-            {
-                moved = false;
-                refreshLastTimer.stop();
-                refreshLastTimer.start();
-            }*/
+            refreshLastPotTimer--;
+        }
+        else
+        {
+            effectChangedTimer--;
         }
 
     }

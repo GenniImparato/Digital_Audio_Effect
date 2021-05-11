@@ -200,7 +200,7 @@ void DAC_Driver::threadMain(void *param)
             dmaRefillWaiting = false;
             dmaRefill();
         }
-        miosix::Thread::sleep(500);
+        miosix::Thread::yield();
     }
 }
 

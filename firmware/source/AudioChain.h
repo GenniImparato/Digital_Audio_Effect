@@ -11,7 +11,7 @@
 
 
 #define CONTROLS_COUNT              4
-#define CONTROLS_REFRESH_PERIOD     50 // ms
+#define CONTROLS_REFRESH_PERIOD     20 // ms
 
 #define AUDIO_SOURCES_COUNT         2
 #define ADC_SOURCE                  0
@@ -56,6 +56,8 @@ class AudioChain
         static  bool                    controlSynthFlag;
         static  bool                    lastControlSynthFlag;
         static  int                     effectChangedTimer;
+        static  int                     refreshLastPotTimer;
+        static  int                     lastPotChanged;
 
         //effect main dsp loop (not static)
         static  void                    readADCLoop();
