@@ -1,3 +1,6 @@
+#ifndef LEDS_CHARS___
+#define LEDS_CHARS___
+
 #include "LedMatrix_Driver.h"
 
 LedChar A {
@@ -304,9 +307,7 @@ LedChar SPACE {
 {0, 0, 0},
 };
 
-
-
-
+#endif
 
 
 

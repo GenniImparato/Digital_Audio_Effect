@@ -34,8 +34,14 @@ int main()
 	Button<GPIOA_BASE,0> button;
 
 	//main loop
-    while(true)
-    {
+    while(true){
 		button.check();
+
+		// LedMatrix_Driver::setLed(6,5);
+		// LedMatrix_Driver::setLed(0,8);
+		// unsigned short x[LED_MATRIX_ROWS] {0,0,1,0,0,0,0,0,1,0};
+		// unsigned short y[LED_MATRIX_COLUMNS] {0,1,1,0,0,0,0,0,0,0,0,0,1,0,0};
+		// LedMatrix_Driver::setLeds(x, y);
+			
     }
 }

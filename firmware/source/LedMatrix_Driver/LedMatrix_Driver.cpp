@@ -1,8 +1,7 @@
 #include "LedMatrix_Driver.h"
 #include "Leds_Gpios.h" // For Gpio namespace
 #include "Leds_Chars.h"
-#include <cstring> // To use memcpy
-#include <cctype> // To use toupper()
+#include <cctype> // For toupper()
 
 using namespace miosix;
 
@@ -14,6 +13,19 @@ std::vector<GpioPin> COLS;
 
 static unsigned short rowCount = 0;
 
+
+void checkHorizontalLayer(unsigned short &letterCount, unsigned short &horizontalLayerCount, unsigned short &verticalLayerCount){
+	if(letterCount == LED_MAX_CHARS/2 && horizontalLayerCount <= LED_HORIZONTAL_LAYERS-1){
+		horizontalLayerCount++;
+		verticalLayerCount = 0;
+	}
+}
+
+void checkVerticalLayer(unsigned short &verticalLayerCount){
+	if (verticalLayerCount < LED_VERTICAL_LAYERS - 1){
+		verticalLayerCount++;
+	}
+}
 
 void LedMatrix_Driver::configureTIM5(void){
     // enable TIM5 clock (bit 7)
@@ -46,22 +58,7 @@ void LedMatrix_Driver::configureTIM5(void){
 	TIM5->CR1 &= ~(TIM_CR1_DIR);// Upcounting
 }
 
-void checkHorizontalLayer(unsigned short &letterCount, unsigned short &horizontalLayerCount, unsigned short &verticalLayerCount){
-	if(letterCount == LED_MAX_CHARS/2 && horizontalLayerCount <= LED_HORIZONTAL_LAYERS-1){
-		horizontalLayerCount++;
-		verticalLayerCount = 0;
-	}
-}
-
-void checkVerticalLayer(unsigned short &verticalLayerCount){
-	if (verticalLayerCount < LED_VERTICAL_LAYERS - 1)
-	{
-		verticalLayerCount++;
-	}
-}
-
-void LedMatrix_Driver::init()
-{
+void LedMatrix_Driver::init(){
 	// Puts the GPIOs in 2 Vectors to facilitate their usage
 	fillVectors();
 
@@ -107,15 +104,12 @@ void LedMatrix_Driver::fillVectors(){
 
 void LedMatrix_Driver::setGpiosMode(){
 	// Set OUTPUT mode on every led
-	for (int i = 0; i < LED_MATRIX_ROWS; i++)
-	{
+	for (int i = 0; i < LED_MATRIX_ROWS; i++){
 		ROWS[i].mode(Mode::OUTPUT);
 	}
-	for (int i = 0; i < LED_MATRIX_COLUMNS; i++)
-	{
+	for (int i = 0; i < LED_MATRIX_COLUMNS; i++){
 		COLS[i].mode(Mode::OUTPUT);
 	}
-
 }
 
 void LedMatrix_Driver::turnOffAllLeds(){
@@ -135,17 +129,25 @@ void LedMatrix_Driver::columnsOff(){
 	}
 }
 
-// TODO: da implementare
 void LedMatrix_Driver::setLed(unsigned short x, unsigned short y){
+	if (x > LED_MATRIX_ROWS || y > LED_MATRIX_COLUMNS)
+		setString("OUT  BOUND");
+	else
+		bufStr[x][y] = 1;
+}
+//TODO: da sistemare
+void LedMatrix_Driver::setLeds(unsigned short x[LED_MATRIX_ROWS], unsigned short y[LED_MATRIX_COLUMNS]){
+
+	FastInterruptDisableLock dLock;
 	emptyBuffer();
 
-	if (x > LED_MATRIX_ROWS || y > LED_MATRIX_COLUMNS){
-		setString("OUT  BOUND");
+	for (unsigned short i = 0; i < LED_MATRIX_ROWS; i++){
+		for (unsigned short j = 0; j < LED_MATRIX_COLUMNS; j++){
+			if (x[i] && y[j])
+				setLed(i,j);
+		}	
 	}
-	else{
-		ROWS[x].low();
-		COLS[y].low();
-	}
+	
 }
 
 /* 	ledHorizontalLayer: can have values 0-1 
@@ -158,10 +160,9 @@ void LedMatrix_Driver::setLed(unsigned short x, unsigned short y){
 		when 4, it targets columns 12-14
 */
 void LedMatrix_Driver::setChar(LedChar ledChar, unsigned short ledHorizontalLayer, unsigned short ledVerticalLayer){
-	// emptyBuffer();
 	for (int i = LED_SUBMATRIX_ROWS*ledHorizontalLayer; i < LED_MATRIX_ROWS; i++){
 		for (int j = LED_SUBMATRIX_COLUMNS*ledVerticalLayer; j < LED_MATRIX_COLUMNS; j++){
-			if (bufStr[i][j] == 0 && (i - LED_SUBMATRIX_ROWS*ledHorizontalLayer) < LED_SUBMATRIX_ROWS && (j - LED_SUBMATRIX_COLUMNS*ledVerticalLayer) < LED_SUBMATRIX_COLUMNS)		
+			if (!bufStr[i][j] && (i - LED_SUBMATRIX_ROWS*ledHorizontalLayer) < LED_SUBMATRIX_ROWS && (j - LED_SUBMATRIX_COLUMNS*ledVerticalLayer) < LED_SUBMATRIX_COLUMNS)		
 				bufStr[i][j] += ledChar[i - LED_SUBMATRIX_ROWS*ledHorizontalLayer][j - LED_SUBMATRIX_COLUMNS*ledVerticalLayer];
 		}
 	}
@@ -174,9 +175,8 @@ void LedMatrix_Driver::setString(std::string str){
 	unsigned short verticalLayerCount = 0;
 
 
-	if (str.length() > LED_MAX_CHARS){
-		setString("Too  Long");
-	}
+	if (str.length() > LED_MAX_CHARS)
+		setString("TOO  LONG");
 	else{
 		FastInterruptDisableLock dLock;
 		emptyBuffer();
@@ -369,8 +369,7 @@ void LedMatrix_Driver::emptyBuffer(){
 	}
 }
 
-void LedMatrix_Driver::IRQTIM5Handler(void)
-{  
+void LedMatrix_Driver::IRQTIM5Handler(void){  
 	// Clear interrupt status
     if (TIM5->DIER & 0x01) {
         if (TIM5->SR & 0x01) {

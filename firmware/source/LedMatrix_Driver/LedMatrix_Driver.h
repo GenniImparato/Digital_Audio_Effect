@@ -46,6 +46,7 @@ class LedMatrix_Driver
 
 		//thread safe writer methods
 		static void 			setLed(unsigned short x, unsigned short y);
+		static void				setLeds(unsigned short x[LED_MATRIX_ROWS], unsigned short y[LED_MATRIX_COLUMNS]);
 		static void				setChar(LedChar ledChar, unsigned short ledHorizontalLayer, unsigned short ledVerticalLayer);
 		static void				setString(std::string str);
 		static void				writeLeds();
