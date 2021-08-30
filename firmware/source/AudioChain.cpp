@@ -64,13 +64,7 @@ void AudioChain::nextEffect()
     {
         Lock<Mutex> lock(ctrlMutex);
         if(controlSynthFlag)
-        {
             controlSynthFlag = false;
-            LedMatrix_Driver::setString(std::string("FX   ") + activeEffect->getName());
-            effectChangedTimer = 100;
-            lastPotChanged = -1;
-            return;
-        }
     }
 
     Lock<Mutex> lock(effectMutex);
@@ -83,9 +77,11 @@ void AudioChain::nextEffect()
         case 0:
             activeEffect = new AudioEffect();
             break;
-
         case 1:
             activeEffect = new Delay();
+            break;
+        case 2:
+            activeEffect = new Filter();
             break;
     }
 

@@ -81,8 +81,6 @@ void Oscillator::update()
 
         patternIndex2++;
         patternIndex2Updated=true;
-        if(patternIndex2 >= 10)
-            patternIndex2=0;
     }
 
     //NORMAL
@@ -96,24 +94,26 @@ void Oscillator::update()
     {
         patternFrequency = 1 + 0.1*patternIndex2;
         patternAmplitude = 1;
+        if(patternIndex2 >= 10)
+            patternIndex2=0;
     }
     //RANDOM
     else if(pattern == 2)
     {
         if(patternIndex2Updated)
         {
-            patternFrequency = (float)(rand()%1000)/1000;
+            patternFrequency = (float)(rand()%90+10)/100;
             patternAmplitude = 1;
         }
     }
-    //RANDOM
+    //OCTAVES
     else if(pattern == 3)
     {
         if(patternIndex2Updated)
         {
             if(patternIndex2 == 0)
             {
-                patternFrequency = (float)(rand()%1000)/1000;
+                patternFrequency = 1;
                 patternAmplitude = 1;
             }
             else if(patternIndex2 == 1)
@@ -129,9 +129,9 @@ void Oscillator::update()
             {
                 patternAmplitude = 0;
             }
-            else if(patternIndex2 >= 4)
+            else if(patternIndex2 >= 10)
             {
-                patternFrequency = (float)(rand()%1000)/2000;
+                patternFrequency = 1;
                 patternAmplitude = 1;
                 patternIndex2 = 0;
             }
@@ -257,7 +257,7 @@ void Synthesizer::postWrite()
             else if(activeParam==3)
                 osc[i]->setPatternSpeed(controls[i].getIntValue(0, PATTERN_MAX_SPEED-5));
         }
-        else if(controls[i].isPotMoved(10))
+        else if(controls[i].isPotMoved(15))
             holdControl[i] = false;
 
         osc[i]->update();

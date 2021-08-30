@@ -7,6 +7,7 @@
 #include "AudioEffects/AudioEffect.h"
 #include "AudioEffects/Synthesizer.h"
 #include "AudioEffects/Delay.h"
+#include "AudioEffects/Filter.h"
 
 
 
@@ -17,7 +18,7 @@
 #define ADC_SOURCE                  0
 #define SYNTH_SOURCE                1
 
-#define AUDIO_EFFECTS_COUNT         2
+#define AUDIO_EFFECTS_COUNT         3
 
 
 class AudioChain

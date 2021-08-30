@@ -28,12 +28,12 @@ void Delay::writeNextBuffer(float* inBuff, float* outBuff)
 		if(delayIndex>=0)
 		{
 			outBuff[i] = inBuff[i]*0.5 + delayBuff[delayIndex]*0.5;
-			delayBuff[delayIndex] = inBuff[i] + delayBuff[delayIndex]*feedback;
+			delayBuff[delayIndex] = inBuff[i]*0.75 + delayBuff[delayIndex]*feedback;
 		}
 		else
 		{
-			outBuff[i] = inBuff[i]*0.5 + delayBuff[i]*0.5;
-			delayBuff[i] = inBuff[i]*feedback;
+			outBuff[i] = inBuff[i];
+			//delayBuff[delayIndex] = inBuff[i]*0.75 + delayBuff[delayIndex]*feedback;
 		}
 
 		delayIndex++;

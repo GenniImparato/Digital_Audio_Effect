@@ -27,6 +27,7 @@ source/DAC_Driver/DAC_Driver.cpp	\
 source/AudioEffects/AudioEffect.cpp \
 source/AudioEffects/Synthesizer.cpp	\
 source/AudioEffects/Delay.cpp		\
+source/AudioEffects/Filter.cpp	\
 source/LedMatrix_Driver/LedMatrix_Driver.cpp
 
 ##

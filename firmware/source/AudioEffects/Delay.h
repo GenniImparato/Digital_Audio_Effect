@@ -1,9 +1,9 @@
-#ifndef AUDIO_EFFECT_DISTORSION___H___
-#define AUDIO_EFFECT_DISTORSION___H___
+#ifndef AUDIO_EFFECT_DELAY___H___
+#define AUDIO_EFFECT_DELAY___H___
 
 #include "AudioEffect.h"
 
-#define DELAY_SAMPLES_COUNT	AUDIO_BUFFERS_SIZE*40		 	
+#define DELAY_SAMPLES_COUNT	AUDIO_BUFFERS_SIZE*30		 	
 
 class Delay	:public AudioEffect
 {

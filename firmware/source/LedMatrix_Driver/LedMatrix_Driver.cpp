@@ -36,8 +36,12 @@ void LedMatrix_Driver::configureTIM5(void){
     // TIM5->ARR = 399;
 
 	// 500 Hz
+    //TIM5->PSC = 349;
+    //TIM5->ARR = 239;
+
+    // ? Hz
     TIM5->PSC = 349;
-    TIM5->ARR = 239;
+    TIM5->ARR = 500;
 
 
     /* Reset the MMS Bits */

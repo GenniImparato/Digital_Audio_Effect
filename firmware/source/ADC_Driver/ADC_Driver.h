@@ -6,7 +6,7 @@
 #include "miosix/kernel/scheduler/scheduler.h"
 #include "Filter.h"
 
-#define	FILTER_SAMLPLES_COUNT		20
+#define	FILTER_SAMLPLES_COUNT		5
 
 //static class to manage ADC
 class ADC_Driver
