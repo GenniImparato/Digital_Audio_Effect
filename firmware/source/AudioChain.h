@@ -12,7 +12,7 @@
 
 
 #define CONTROLS_COUNT              4
-#define CONTROLS_REFRESH_PERIOD     20 // ms
+#define CONTROLS_REFRESH_PERIOD     50 // ms
 
 #define AUDIO_SOURCES_COUNT         2
 #define ADC_SOURCE                  0

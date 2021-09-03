@@ -18,25 +18,15 @@ int main()
 	ADC_Driver::init();
 	DAC_Driver::init();
 	DAC_Driver::setVolume(0);
-
 	
 	AudioChain::startThreads();
 
-	//start blink
-	for(int i=0; i<5; i++)
-	{
-		ledOn();
-		Thread::sleep(100);
-		ledOff();
-		Thread::sleep(100);
-	}
 
 	Button<GPIOA_BASE,0> button;
-
 	//main loop
     while(true)
     {
 		button.check();	
-		Thread::sleep(10);
+		Thread::sleep(20);
     }
 }

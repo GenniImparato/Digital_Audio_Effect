@@ -189,7 +189,7 @@ void AudioChain::writeDACLoop()
 void AudioChain::convertAudioBuffer_AdcToDsp(const unsigned short* inBuff, float* outBuff)
 {
     for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
-        outBuff[i] = 2*inBuff[i]/4069.0 - 1;
+        outBuff[i] = 2.0*((float)inBuff[i])/4069.0 - 1.0;
 }
 
 void AudioChain::convertAudioBuffer_DspToDac(float* inBuff, unsigned short* outBuff)
