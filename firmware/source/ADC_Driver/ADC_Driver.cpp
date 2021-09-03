@@ -6,6 +6,8 @@ const unsigned short    ADC_Driver::potChannels[POTS_COUNT] = {2,8,3,1};
 
 AudioBufferQueue*       ADC_Driver::dmaBuffer;
 miosix::Thread*         ADC_Driver::waitingThread;
+miosix::Thread*         ADC_Driver::restartThread;
+bool                    ADC_Driver::dmaRefillWaiting = false;
 
 unsigned short ADC_Driver::buffer[AUDIO_BUFFERS_SIZE];
 
@@ -63,6 +65,8 @@ void ADC_Driver::init()
     dmaBuffer->bufferFilled(AUDIO_BUFFERS_SIZE);*/
 
     configureTIM2();
+
+    restartThread = Thread::create(&ADC_Driver::threadMain, 256, 0);
 }
 
 void ADC_Driver::configureTIM2(void)
@@ -203,8 +207,8 @@ bool ADC_Driver::IRQdmaRestart()
 
     if(!dmaBuffer->tryGetWritableBuffer(buffer))
     {   
-        //dmaRefillWaiting = true;
-        //miosix::ledOn();
+        dmaRefillWaiting = true;
+        miosix::ledOn();
         return false;
     }
     else    
@@ -236,6 +240,16 @@ bool ADC_Driver::dmaRestart()
     return IRQdmaRestart();
 }
 
+void ADC_Driver::adc2Restart()
+{
+    ADC2->SR &= ~(ADC_SR_OVR);
+    ADC2->CR2 |= (ADC_CR2_DMA|ADC_CR2_DDS);
+    //clear the overload
+    ADC2->SR &= ~(ADC_SR_OVR|ADC_SR_STRT);
+    //start the ADC
+    ADC2->CR2 |= (uint32_t)ADC_CR2_SWSTART;
+}
+
 //DMA end of transer interrupt handler
 void ADC_Driver::IRQdmaEndHandler()
 {
@@ -253,12 +267,7 @@ void ADC_Driver::IRQdmaEndHandler()
     if(IRQdmaRestart())
     {
         //miosix::ledOn();
-        ADC2->SR &= ~(ADC_SR_OVR);
-        ADC2->CR2 |= (ADC_CR2_DMA|ADC_CR2_DDS);
-        //clear the overload
-        ADC2->SR &= ~(ADC_SR_OVR|ADC_SR_STRT);
-        //start the ADC
-        ADC2->CR2 |= (uint32_t)ADC_CR2_SWSTART;
+        adc2Restart();
 
         waitingThread->IRQwakeup();
         if(waitingThread->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
@@ -269,6 +278,21 @@ void ADC_Driver::IRQdmaEndHandler()
 
     //dmaBuffer->bufferEmptied();
 
+}
+
+void ADC_Driver::threadMain(void *param)
+{
+    while(true)
+    {
+        if(dmaRefillWaiting)
+        {
+            dmaRefillWaiting = false;
+            miosix::ledOff();
+            dmaRestart();
+            adc2Restart();
+        }
+        miosix::Thread::yield();
+    }
 }
 
 void ADC_Driver::IRQTIM2Handler(void)

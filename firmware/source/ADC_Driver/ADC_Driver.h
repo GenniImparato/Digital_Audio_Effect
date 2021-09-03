@@ -20,11 +20,14 @@ class ADC_Driver
 
 		static AudioBufferQueue*   	dmaBuffer;
 		static miosix::Thread*		waitingThread;
+		static miosix::Thread*		restartThread;
+		static bool 				dmaRefillWaiting;
 
 		static unsigned short buffer[AUDIO_BUFFERS_SIZE];
 
 		static void 				    configureTIM2();
 		static void						configureADC2();
+		static void  					adc2Restart();
 
 	public:
 
@@ -48,6 +51,8 @@ class ADC_Driver
 
 		//Configure the DMA to do another transfer from non-interrupt code
 		static bool 					dmaRestart();
+
+		static void 					threadMain(void *param);
 
 		
 
