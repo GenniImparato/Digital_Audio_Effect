@@ -7,7 +7,6 @@
 
 // TODO: Maybe I can speed up the GPIOs using ::speed (see gpio_impl.h)
 
-#define LED_MATRIX_REFRESH_PERIOD	1	//ms
 
 #define LED_MATRIX_ROWS				10
 #define LED_MATRIX_COLUMNS			15
@@ -48,7 +47,7 @@ class LedMatrix_Driver
 		static void 			setLed(unsigned short x, unsigned short y);
 		static void				setLeds(unsigned short x[LED_MATRIX_ROWS], unsigned short y[LED_MATRIX_COLUMNS]);
 		static void				setChar(LedChar ledChar, unsigned short ledHorizontalLayer, unsigned short ledVerticalLayer);
-		static void				setString(std::string str);
+		static void				setString(const std::string &str);
 		static void				writeLeds();
 		static void				emptyBuffer();
 		static void 			IRQTIM5Handler();

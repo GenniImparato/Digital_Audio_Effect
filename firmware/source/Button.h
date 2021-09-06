@@ -4,9 +4,9 @@
 #include <miosix.h>
 #include "AudioChain.h"
 
-#define BUTTONS_REFRESH_PERIOD       50 //ms
-#define BUTTONS_ANTIBOUNCE_DURATION    2 //ticks
-#define BUTTONS_HOLD_TIME              10 //ticks
+#define BUTTONS_REFRESH_PERIOD       30 //ms
+#define BUTTONS_ANTIBOUNCE_DURATION    1 //ticks
+#define BUTTONS_HOLD_TIME              5 //ticks
 
 
 //button with pull-up resistor (triggers on 0)

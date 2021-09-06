@@ -55,44 +55,50 @@ void AudioChain::startThreads()
 
 void AudioChain::nextEffect()
 {
-
     static int count = -1;
     count++;
     if(count>=AUDIO_EFFECTS_COUNT)
         count = 0;
 
     {
-        Lock<Mutex> lock(ctrlMutex);
-        if(controlSynthFlag)
-            controlSynthFlag = false;
+        Lock<Mutex> lock(effectMutex);
+
+        if(activeEffect != nullptr)
+            delete activeEffect;
+
+        switch(count)
+        {
+            case 0:
+                activeEffect = new AudioEffect();
+                break;
+            case 1:
+                activeEffect = new Delay();
+                break;
+            case 2:
+                activeEffect = new Filter();
+                break;
+            case 3:
+                activeEffect = new Distorsion();
+                break;
+        }
+
+        {
+            Lock<Mutex> lock(ctrlMutex);
+            if(controlSynthFlag)
+                controlSynthFlag = false;
+        }
+
+        effectChangedTimer = 100;
+        lastPotChanged = -1;
     }
 
-    Lock<Mutex> lock(effectMutex);
-
-    if(activeEffect != nullptr)
-        delete activeEffect;
-
-    switch(count)
-    {
-        case 0:
-            activeEffect = new AudioEffect();
-            break;
-        case 1:
-            activeEffect = new Delay();
-            break;
-        case 2:
-            activeEffect = new Filter();
-            break;
-    }
-
-    effectChangedTimer = 100;
-    lastPotChanged = -1;
     LedMatrix_Driver::setString(std::string("FX   ") + activeEffect->getName());
 }
 
 void AudioChain::nextSource()
 {
     Lock<Mutex> lock(effectMutex);
+    Lock<Mutex> lock2(ctrlMutex);
 
     activeSource++;
 
@@ -101,19 +107,16 @@ void AudioChain::nextSource()
 
     if(activeSource == SYNTH_SOURCE)
     {
-        Lock<Mutex> lock(ctrlMutex);
         controlSynthFlag = true;
         LedMatrix_Driver::setString(std::string("SRC  SYNTH"));
     }
     else if(activeSource == ADC_SOURCE)
     {
-        Lock<Mutex> lock(ctrlMutex);
         controlSynthFlag = false;
         LedMatrix_Driver::setString(std::string("SRC  ADC"));
     }
 
     effectChangedTimer = 100;
-    
 }
 
 
@@ -195,13 +198,14 @@ void AudioChain::convertAudioBuffer_DspToDac(float* inBuff, unsigned short* outB
 {
     for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
     {
-        if(inBuff[i] > 1.0)
-            outBuff[i] = 50000;
-        if(inBuff[i] < -1.0)
+        int out = (int)(0.5*(inBuff[i]+1.0)*45000.0);
+
+        if(out > 65535)
+            outBuff[i] = 65535;
+        else if(out < 0)
             outBuff[i] = 0;
         else
-        //outBuff[i] = (unsigned short)(map_d(inBuff[i], -1.0, 1.0, 20000, 40000));
-        outBuff[i] = (unsigned short)(0.5*(inBuff[i]+1.0)*50000.0);
+            outBuff[i] = (unsigned short)out;
     }
 }
 
@@ -227,7 +231,7 @@ void AudioChain::potLoop()
         {
             EffectControl* ctrl = controlEffect->getControl(i);
 
-            if(ctrl->isPotMoved(20))
+            if(ctrl->isPotMoved(25))
             {
                 LedMatrix_Driver::setString(ctrl->getMatrixString());
                 lastPotChanged = i;

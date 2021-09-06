@@ -7,18 +7,19 @@
 #include "AudioEffects/AudioEffect.h"
 #include "AudioEffects/Synthesizer.h"
 #include "AudioEffects/Delay.h"
+#include "AudioEffects/Distorsion.h"
 #include "AudioEffects/Filter.h"
 
 
 
 #define CONTROLS_COUNT              4
-#define CONTROLS_REFRESH_PERIOD     50 // ms
+#define CONTROLS_REFRESH_PERIOD     35 // ms
 
 #define AUDIO_SOURCES_COUNT         2
 #define ADC_SOURCE                  0
 #define SYNTH_SOURCE                1
 
-#define AUDIO_EFFECTS_COUNT         3
+#define AUDIO_EFFECTS_COUNT         4
 
 
 class AudioChain

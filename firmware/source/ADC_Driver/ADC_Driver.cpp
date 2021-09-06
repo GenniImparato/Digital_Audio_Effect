@@ -208,7 +208,7 @@ bool ADC_Driver::IRQdmaRestart()
     if(!dmaBuffer->tryGetWritableBuffer(buffer))
     {   
         dmaRefillWaiting = true;
-        miosix::ledOn();
+        //miosix::ledOn();
         return false;
     }
     else    
@@ -266,15 +266,12 @@ void ADC_Driver::IRQdmaEndHandler()
 
     if(IRQdmaRestart())
     {
-        //miosix::ledOn();
         adc2Restart();
 
         waitingThread->IRQwakeup();
         if(waitingThread->IRQgetPriority()>Thread::IRQgetCurrentThread()->IRQgetPriority())
             Scheduler::IRQfindNextThread();
     }
-    //else
-        //miosix::ledOff();
 
     //dmaBuffer->bufferEmptied();
 
@@ -287,7 +284,7 @@ void ADC_Driver::threadMain(void *param)
         if(dmaRefillWaiting)
         {
             dmaRefillWaiting = false;
-            miosix::ledOff();
+            //miosix::ledOff();
             dmaRestart();
             adc2Restart();
         }

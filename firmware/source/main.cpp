@@ -27,6 +27,6 @@ int main()
     while(true)
     {
 		button.check();	
-		Thread::sleep(20);
+		Thread::sleep(BUTTONS_REFRESH_PERIOD);
     }
 }

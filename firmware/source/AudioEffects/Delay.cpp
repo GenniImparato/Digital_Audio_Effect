@@ -27,8 +27,9 @@ void Delay::writeNextBuffer(float* inBuff, float* outBuff)
 
 		if(delayIndex>=0)
 		{
-			outBuff[i] = inBuff[i]*0.5 + delayBuff[delayIndex]*0.5;
-			delayBuff[delayIndex] = inBuff[i]*0.75 + delayBuff[delayIndex]*feedback;
+			float newVal = inBuff[i] + delayBuff[delayIndex]*feedback;
+			outBuff[i] = newVal;
+			delayBuff[delayIndex] = newVal;
 		}
 		else
 		{

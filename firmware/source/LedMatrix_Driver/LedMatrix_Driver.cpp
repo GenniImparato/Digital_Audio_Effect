@@ -40,7 +40,7 @@ void LedMatrix_Driver::configureTIM5(void){
     //TIM5->ARR = 239;
 
     // ? Hz
-    TIM5->PSC = 349;
+    TIM5->PSC = 350;
     TIM5->ARR = 500;
 
 
@@ -172,7 +172,7 @@ void LedMatrix_Driver::setChar(LedChar ledChar, unsigned short ledHorizontalLaye
 	}
 }
 
-void LedMatrix_Driver::setString(std::string str){
+void LedMatrix_Driver::setString(const std::string &str){
 
 	unsigned short letterCount = 0;
 	unsigned short horizontalLayerCount = 0;

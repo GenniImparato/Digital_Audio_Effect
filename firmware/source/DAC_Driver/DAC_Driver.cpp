@@ -60,6 +60,7 @@ bool DAC_Driver::IRQdmaRefill()
     if(!dmaBuffer->tryGetReadableBuffer(buffer,size))
     {
         dmaRefillWaiting = true;
+        miosix::ledOn();
         return false;
     }
     else    
@@ -198,6 +199,7 @@ void DAC_Driver::threadMain(void *param)
         if(dmaRefillWaiting)
         {
             dmaRefillWaiting = false;
+            miosix::ledOff();
             dmaRefill();
         }
         miosix::Thread::yield();
