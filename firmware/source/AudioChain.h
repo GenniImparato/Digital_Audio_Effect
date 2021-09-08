@@ -7,7 +7,7 @@
 #include "AudioEffects/AudioEffect.h"
 #include "AudioEffects/Synthesizer.h"
 #include "AudioEffects/Delay.h"
-#include "AudioEffects/Distorsion.h"
+#include "AudioEffects/Tremolo.h"
 #include "AudioEffects/Filter.h"
 
 

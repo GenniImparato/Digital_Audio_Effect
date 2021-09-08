@@ -49,7 +49,7 @@ void AudioChain::startThreads()
 {
     readADCThread = Thread::create(&AudioChain::readADCThreadMain, 2048, 3);
     writeDACThread = Thread::create(&AudioChain::writeDACThreadMain, 2048, 3);
-    potThread = Thread::create(&AudioChain::potThreadMain, 1024, 0);
+    potThread = Thread::create(&AudioChain::potThreadMain, 2048, 0);
 }
 
 
@@ -78,7 +78,7 @@ void AudioChain::nextEffect()
                 activeEffect = new Filter();
                 break;
             case 3:
-                activeEffect = new Distorsion();
+                activeEffect = new Tremolo();
                 break;
         }
 
@@ -90,9 +90,9 @@ void AudioChain::nextEffect()
 
         effectChangedTimer = 100;
         lastPotChanged = -1;
-    }
 
-    LedMatrix_Driver::setString(std::string("FX   ") + activeEffect->getName());
+        LedMatrix_Driver::setString(std::string("FX   ") + activeEffect->getName());
+    }
 }
 
 void AudioChain::nextSource()

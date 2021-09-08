@@ -40,7 +40,7 @@ void LedMatrix_Driver::configureTIM5(void){
     //TIM5->ARR = 239;
 
     // ? Hz
-    TIM5->PSC = 350;
+    TIM5->PSC = 400;
     TIM5->ARR = 500;
 
 

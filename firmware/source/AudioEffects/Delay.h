@@ -3,7 +3,7 @@
 
 #include "AudioEffect.h"
 
-#define DELAY_SAMPLES_COUNT	AUDIO_BUFFERS_SIZE*30		 	
+#define DELAY_SAMPLES_COUNT	AUDIO_BUFFERS_SIZE*45		 	
 
 class Delay	:public AudioEffect
 {

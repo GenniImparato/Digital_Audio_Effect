@@ -75,8 +75,8 @@ void ADC_Driver::configureTIM2(void)
     RCC->APB1ENR |= (1 << 0);           
 
     //44.1 Khz
-    TIM2->PSC = 15;
-    TIM2->ARR = 59;
+    TIM2->PSC = 16;
+    TIM2->ARR = 55;
 
     /* Reset the MMS Bits */
     TIM2->CR2 &= (uint16_t)~TIM_CR2_MMS;
@@ -129,7 +129,7 @@ void ADC_Driver::configureADC2()
 }
 
 //performs a single conversion (uses ADC1)
-unsigned int ADC_Driver::singleConversion(unsigned short channel)
+unsigned short ADC_Driver::singleConversion(unsigned short channel)
 {
 	//single conversion mode
 	ADC1->CR1 = 0;
@@ -156,7 +156,7 @@ unsigned int ADC_Driver::singleConversion(unsigned short channel)
     return result;
 }
 
-unsigned int ADC_Driver::filterConversions(unsigned short channel)
+unsigned short ADC_Driver::filterConversions(unsigned short channel)
 {
     unsigned int filteredValue;
 
@@ -167,7 +167,7 @@ unsigned int ADC_Driver::filterConversions(unsigned short channel)
     return filteredValue;
 }
 
-unsigned int ADC_Driver::filterConversionsPot(unsigned short pot)
+unsigned short ADC_Driver::filterConversionsPot(unsigned short pot)
 {
 	if(pot>=POTS_COUNT)
 		return 0;

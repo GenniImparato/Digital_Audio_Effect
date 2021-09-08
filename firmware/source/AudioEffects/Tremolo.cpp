@@ -1,9 +1,9 @@
-#include "Distorsion.h"
+#include "Tremolo.h"
 #include <math.h>       /* exp */
 
 //float Delay::delayBuff[DELAY_SAMPLES_COUNT] = {};
 
-Distorsion::Distorsion()
+Tremolo::Tremolo()
 {
 	controls[0].setName(std::string("SPEED"));
 	controls[0].setFloatDigits(2);
@@ -11,7 +11,7 @@ Distorsion::Distorsion()
 	setName(std::string("TREML"));
 }
 
-void Distorsion::writeNextBuffer(float* inBuff, float* outBuff)
+void Tremolo::writeNextBuffer(float* inBuff, float* outBuff)
 {
 	for(int i=0; i<AUDIO_BUFFERS_SIZE; i++)
 	{
@@ -19,7 +19,7 @@ void Distorsion::writeNextBuffer(float* inBuff, float* outBuff)
 	}
 }
 
-void Distorsion::postWrite()
+void Tremolo::postWrite()
 {
 	speed = controls[0].getFloatValue(0.1, 1.0);
 

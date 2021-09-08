@@ -2,14 +2,13 @@
 #define AUDIO_EFFECT_DISTORSION___H___
 
 #include "AudioEffect.h"
+	 	
 
-#define DELAY_SAMPLES_COUNT	AUDIO_BUFFERS_SIZE*30		 	
-
-class Distorsion	:public AudioEffect
+class Tremolo	:public AudioEffect
 {
 	public:
-		Distorsion();
-		~Distorsion(){};
+		Tremolo();
+		~Tremolo(){};
 
 		//overriden methods
 		void				writeNextBuffer(float* inBuff, float* outBuff);

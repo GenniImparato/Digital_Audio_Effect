@@ -6,7 +6,7 @@
 #include "miosix/kernel/scheduler/scheduler.h"
 #include "Filter.h"
 
-#define	FILTER_SAMLPLES_COUNT		15
+#define	FILTER_SAMLPLES_COUNT		5
 
 //static class to manage ADC
 class ADC_Driver
@@ -35,13 +35,13 @@ class ADC_Driver
 		static void		 				init();
 		
 		//performs a single conversion (uses ADC1)
-		static unsigned int 			singleConversion(unsigned short channel);
+		static unsigned short 			singleConversion(unsigned short channel);
 
 		//performs many conversions and filter (uses ADC1)
-		static unsigned int 			filterConversions(unsigned short channel);
+		static unsigned short 			filterConversions(unsigned short channel);
 
 		//performs a single conversion given pot id (uses ADC1)
-		static unsigned int 			filterConversionsPot(unsigned short pot);
+		static unsigned short 			filterConversionsPot(unsigned short pot);
 
 		//suspends readerThread until a buffer is available for reading (uses ADC2)
 		static const unsigned short * 	getReadableBuffer(miosix::Thread* readerThread);
