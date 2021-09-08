@@ -6,14 +6,23 @@
 using namespace miosix;
 
 LedString bufStr {}; //Buffer
-bool isSetting = false;
 
 std::vector<GpioPin> ROWS;
 std::vector<GpioPin> COLS;
 
 static unsigned short rowCount = 0;
 
+/*
+	Since the led matrix is 10x15, we can divide it into logical areas:
+		- Horizontal layers: these are the TWO 5x15 sub-matrices
+		- Vertical layers: these are the FIVE 10x3 sub-matrices
+*/
 
+/*
+	This function does the following actions:
+		- Checks that we have at most 5 characters per layer
+		- Switches layers according to the current buffer status
+*/
 void checkHorizontalLayer(unsigned short &letterCount, unsigned short &horizontalLayerCount, unsigned short &verticalLayerCount){
 	if(letterCount == LED_MAX_CHARS/2 && horizontalLayerCount <= LED_HORIZONTAL_LAYERS-1){
 		horizontalLayerCount++;
@@ -21,28 +30,30 @@ void checkHorizontalLayer(unsigned short &letterCount, unsigned short &horizonta
 	}
 }
 
+/*
+	This function does the following actions:
+		- Checks that we don't surpass the vertical layer's bound
+*/
 void checkVerticalLayer(unsigned short &verticalLayerCount){
 	if (verticalLayerCount < LED_VERTICAL_LAYERS - 1){
 		verticalLayerCount++;
 	}
 }
 
+/*
+	This method configures the TIM5 timer
+*/
 void LedMatrix_Driver::configureTIM5(void){
     // enable TIM5 clock (bit 7)
     RCC->APB1ENR|= RCC_APB1ENR_TIM5EN;           
 
-    // 300 Hz
+    //300 Hz
+    TIM5->PSC = 349;
+    TIM5->ARR = 399;
+
+	// //500 Hz
     // TIM5->PSC = 349;
-    // TIM5->ARR = 399;
-
-	// 500 Hz
-    //TIM5->PSC = 349;
-    //TIM5->ARR = 239;
-
-    // ? Hz
-    TIM5->PSC = 400;
-    TIM5->ARR = 500;
-
+    // TIM5->ARR = 239;
 
     /* Reset the MMS Bits */
     TIM5->CR2 &= (uint16_t)~TIM_CR2_MMS;
@@ -62,6 +73,7 @@ void LedMatrix_Driver::configureTIM5(void){
 	TIM5->CR1 &= ~(TIM_CR1_DIR);// Upcounting
 }
 
+
 void LedMatrix_Driver::init(){
 	// Puts the GPIOs in 2 Vectors to facilitate their usage
 	fillVectors();
@@ -72,10 +84,14 @@ void LedMatrix_Driver::init(){
 	// Turn OFF all leds since setting their mode to OUTPUT turns them on
 	turnOffAllLeds();
 	
-	// TIM5 init
+	// TIM5 initialization
 	configureTIM5();
 }
 
+
+/*
+	This method fills two vectors (one for the rows and one for the columns) with the relative GPIOs
+*/
 void LedMatrix_Driver::fillVectors(){
 	
 	ROWS.push_back(ROW1::getPin());
@@ -106,8 +122,12 @@ void LedMatrix_Driver::fillVectors(){
 	COLS.push_back(COL15::getPin());
 }
 
+
+/* 
+	This method sets OUTPUT mode to every GPIO in the two vectors
+*/
 void LedMatrix_Driver::setGpiosMode(){
-	// Set OUTPUT mode on every led
+
 	for (int i = 0; i < LED_MATRIX_ROWS; i++){
 		ROWS[i].mode(Mode::OUTPUT);
 	}
@@ -133,35 +153,16 @@ void LedMatrix_Driver::columnsOff(){
 	}
 }
 
-void LedMatrix_Driver::setLed(unsigned short x, unsigned short y){
-	if (x > LED_MATRIX_ROWS || y > LED_MATRIX_COLUMNS)
-		setString("OUT  BOUND");
-	else
-		bufStr[x][y] = 1;
-}
-//TODO: da sistemare
-void LedMatrix_Driver::setLeds(unsigned short x[LED_MATRIX_ROWS], unsigned short y[LED_MATRIX_COLUMNS]){
-
-	FastInterruptDisableLock dLock;
-	emptyBuffer();
-
-	for (unsigned short i = 0; i < LED_MATRIX_ROWS; i++){
-		for (unsigned short j = 0; j < LED_MATRIX_COLUMNS; j++){
-			if (x[i] && y[j])
-				setLed(i,j);
-		}	
-	}
-	
-}
-
-/* 	ledHorizontalLayer: can have values 0-1 
-		when 0, it targets rows 0-4
-		when 1, it targets rows 5-9
-	ledVerticalLayer: can have value 0-4
-		when 0, it targets columns 0-2
-		when 1, it targets columns 3-5
-		...
-		when 4, it targets columns 12-14
+/* 	
+	This method writes a character in a 5x3 sub-matrix, in a position given by the following parameters: 
+		ledHorizontalLayer: can have values 0-1 
+			when 0, it targets rows 0-4
+			when 1, it targets rows 5-9
+		ledVerticalLayer: can have value 0-4
+			when 0, it targets columns 0-2
+			when 1, it targets columns 3-5
+			...
+			when 4, it targets columns 12-14
 */
 void LedMatrix_Driver::setChar(LedChar ledChar, unsigned short ledHorizontalLayer, unsigned short ledVerticalLayer){
 	for (int i = LED_SUBMATRIX_ROWS*ledHorizontalLayer; i < LED_MATRIX_ROWS; i++){
@@ -172,6 +173,9 @@ void LedMatrix_Driver::setChar(LedChar ledChar, unsigned short ledHorizontalLaye
 	}
 }
 
+/*
+	This method writes a given string into a buffer, which will then be used to light up the relative leds.
+*/
 void LedMatrix_Driver::setString(const std::string &str){
 
 	unsigned short letterCount = 0;
@@ -346,6 +350,10 @@ void LedMatrix_Driver::setString(const std::string &str){
 	}
 }
 
+/*
+	This method lights up the leds according to the buffer's values.
+	It works only in a row at a time, given the hardware constraints.
+*/
 void LedMatrix_Driver::writeLeds(){
 	if (rowCount > 0)	
 		ROWS[rowCount-1].high();
@@ -373,6 +381,12 @@ void LedMatrix_Driver::emptyBuffer(){
 	}
 }
 
+
+/*
+	This Interrupt does the following actions:
+		- Clears the interrupt status in the register
+		- Calls writeLeds to light up a row at a time.
+*/
 void LedMatrix_Driver::IRQTIM5Handler(void){  
 	// Clear interrupt status
     if (TIM5->DIER & 0x01) {

@@ -5,8 +5,6 @@
 #include "../config.h"
 #include "miosix/kernel/scheduler/scheduler.h"
 
-// TODO: Maybe I can speed up the GPIOs using ::speed (see gpio_impl.h)
-
 
 #define LED_MATRIX_ROWS				10
 #define LED_MATRIX_COLUMNS			15
@@ -28,13 +26,10 @@ class LedMatrix_Driver
 	private:
 		//private contructor
 		LedMatrix_Driver() {};
-
 		static miosix::Thread*	refreshThread;
 		static void 			configureTIM5();
 
-
 	public:
-
 		//initialize
 		static void 			init();
 		static void				fillVectors(); //Gpios are handled easier using them in Vectors
@@ -44,8 +39,6 @@ class LedMatrix_Driver
 		static void 			columnsOff();
 
 		//thread safe writer methods
-		static void 			setLed(unsigned short x, unsigned short y);
-		static void				setLeds(unsigned short x[LED_MATRIX_ROWS], unsigned short y[LED_MATRIX_COLUMNS]);
 		static void				setChar(LedChar ledChar, unsigned short ledHorizontalLayer, unsigned short ledVerticalLayer);
 		static void				setString(const std::string &str);
 		static void				writeLeds();
