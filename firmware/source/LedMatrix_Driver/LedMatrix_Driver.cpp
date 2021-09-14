@@ -1,6 +1,6 @@
 #include "LedMatrix_Driver.h"
 #include "Leds_Gpios.h" // For Gpio namespace
-#include "Leds_Chars.h"
+#include "Leds_Chars.h" // For hardcoded characters for the buffer
 #include <cctype> // For toupper()
 
 using namespace miosix;
@@ -50,10 +50,6 @@ void LedMatrix_Driver::configureTIM5(void){
     //300 Hz
     TIM5->PSC = 349;
     TIM5->ARR = 399;
-
-	// //500 Hz
-    // TIM5->PSC = 349;
-    // TIM5->ARR = 239;
 
     /* Reset the MMS Bits */
     TIM5->CR2 &= (uint16_t)~TIM_CR2_MMS;
