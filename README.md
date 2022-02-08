@@ -10,6 +10,7 @@
 ## Index
 
 * ### [Overview](#intro)
+* ### [Videos](#videos)
 * ### [Requirements](#req)
   * #### [Hardware](#hw)
   * #### [Software](#sw)
@@ -19,13 +20,21 @@
   * #### [Filter](#filter) 
 * ### [Future Improvements](#future)
 
-
 ## <a name="intro"></a>Overview
 This project is a platform to experiment with **real-time DSP effects** on
 audio, with an STM32 microprocessor, using a multi-threaded, real-time environment.
 The application has been developed on top of the **Miosix** embedded operative system which provided real-time operating system (RTOS) features, as well as a native multi-threaded enviroment.
 A full detailed document explaining the project in details can be found at:
 https://github.com/GenniImparato/Digital_Audio_Effect/blob/main/docs/report/Digital_Audio_Effects.pdf
+
+
+## <a name="videos"></a>Videos
+https://user-images.githubusercontent.com/37338634/153053574-94ea6515-ac46-4c21-b3ac-aa7877b238f6.mp4
+
+https://user-images.githubusercontent.com/37338634/153054718-db798998-3f35-4ed6-b5b4-32b3baa28a30.mp4
+
+https://user-images.githubusercontent.com/37338634/153054537-bed419cf-c9f3-40c2-ad0e-0b04481bedc5.mp4
+
 
 ## <a name="req"></a>Requirements
 
